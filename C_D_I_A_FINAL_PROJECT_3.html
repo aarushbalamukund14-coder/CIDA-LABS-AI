@@ -1,0 +1,2299 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C.I.D.A LABS — pH Advisor</title>
+<style>
+/* ============================================================
+   C.I.D.A LABS — Chemical Indicator & Dermal Advisor
+   Grade 7 STEM + AI Project. Single file, works offline.
+   ============================================================ */
+
+/* ---------- THEME TOKENS ---------- */
+:root{
+  --bg:#050b17;
+  --bg-2:#081327;
+  --panel:rgba(12,26,48,.62);
+  --panel-solid:#0b1a2e;
+  --line:rgba(56,213,255,.22);
+  --line-soft:rgba(140,190,255,.12);
+  --text:#e8f4ff;
+  --text-dim:#9bb3cf;
+  --cyan:#2fd8ff;
+  --cyan-deep:#0aa6d6;
+  --blue:#4d7cff;
+  --purple:#9b6bff;
+  --green:#34e0a1;
+  --amber:#ffc24d;
+  --red:#ff5f6d;
+  --orange:#ff9a3c;
+  --glow:0 0 22px rgba(47,216,255,.28);
+  --glow-soft:0 0 40px rgba(47,216,255,.14);
+  --r-lg:26px;
+  --r-md:18px;
+  --r-sm:12px;
+  --hex:rgba(47,216,255,.16);
+  --shadow:0 20px 50px rgba(0,0,0,.45);
+}
+html[data-theme="light"]{
+  --bg:#f2f6fb;
+  --bg-2:#e8eff7;
+  --panel:rgba(255,255,255,.78);
+  --panel-solid:#ffffff;
+  --line:rgba(10,120,160,.22);
+  --line-soft:rgba(20,60,110,.12);
+  --text:#0d2033;
+  --text-dim:#516b85;
+  --cyan:#0b9fc9;
+  --cyan-deep:#077ea3;
+  --blue:#2f5bd0;
+  --purple:#6f42d8;
+  --green:#12a06c;
+  --amber:#b57b00;
+  --red:#d32f3f;
+  --orange:#d9701f;
+  --glow:0 8px 24px rgba(11,159,201,.18);
+  --glow-soft:0 12px 40px rgba(11,159,201,.12);
+  --hex:rgba(11,159,201,.14);
+  --shadow:0 14px 34px rgba(18,50,80,.12);
+}
+
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;scroll-padding-top:96px;}
+body{
+  margin:0;
+  font-family:"Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  line-height:1.65;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{line-height:1.2;margin:0 0 .5em;font-weight:700;letter-spacing:-.01em;}
+p{margin:0 0 1em;}
+a{color:inherit;text-decoration:none;}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:3px;border-radius:6px;}
+
+/* ---------- ANIMATED BACKGROUND ---------- */
+#bg-layer{position:fixed;inset:0;z-index:-3;background:
+  radial-gradient(1000px 700px at 80% -10%, rgba(77,124,255,.18), transparent 60%),
+  radial-gradient(900px 650px at 5% 15%, rgba(47,216,255,.14), transparent 60%),
+  radial-gradient(800px 700px at 50% 110%, rgba(155,107,255,.16), transparent 60%),
+  linear-gradient(180deg,var(--bg) 0%, var(--bg-2) 60%, var(--bg) 100%);
+}
+#hex-layer{position:fixed;inset:0;z-index:-2;opacity:.9;pointer-events:none;}
+#blob-a,#blob-b{position:fixed;border-radius:50%;filter:blur(90px);z-index:-2;pointer-events:none;opacity:.5;}
+#blob-a{width:46vw;height:46vw;left:-12vw;top:6vh;background:radial-gradient(circle,rgba(47,216,255,.35),transparent 70%);animation:drift 26s ease-in-out infinite alternate;}
+#blob-b{width:40vw;height:40vw;right:-10vw;top:45vh;background:radial-gradient(circle,rgba(155,107,255,.32),transparent 70%);animation:drift 34s ease-in-out infinite alternate-reverse;}
+@keyframes drift{from{transform:translate3d(0,0,0);}to{transform:translate3d(6vw,-8vh,0);}}
+#scan-layer{position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.30;
+  background:repeating-linear-gradient(to bottom,transparent 0 3px,rgba(255,255,255,.028) 3px 4px);}
+html[data-theme="light"] #scan-layer{opacity:.18;background:repeating-linear-gradient(to bottom,transparent 0 3px,rgba(0,40,80,.03) 3px 4px);}
+.spark{position:fixed;width:3px;height:3px;border-radius:50%;background:var(--cyan);opacity:.5;z-index:-1;pointer-events:none;
+  box-shadow:0 0 8px var(--cyan);animation:float-up linear infinite;}
+@keyframes float-up{0%{transform:translateY(0);opacity:0;}10%{opacity:.6;}90%{opacity:.4;}100%{transform:translateY(-110vh);opacity:0;}}
+
+/* ---------- LAYOUT ---------- */
+.wrap{width:min(1160px,92vw);margin:0 auto;}
+section.band{padding:86px 0;position:relative;}
+.eyebrow{font-family:ui-monospace,"Consolas",monospace;font-size:.7rem;letter-spacing:.22em;
+  color:var(--cyan);opacity:.85;margin-bottom:10px;}
+.sec-title{font-size:clamp(1.6rem,3.4vw,2.5rem);}
+.sec-lead{color:var(--text-dim);max-width:68ch;}
+
+/* ---------- GLASS CARD ---------- */
+.glass{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:var(--r-lg);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+  box-shadow:var(--shadow);
+  padding:26px;
+  position:relative;
+}
+.glass::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(140deg,rgba(255,255,255,.07),transparent 42%);}
+html[data-theme="light"] .glass::after{background:linear-gradient(140deg,rgba(255,255,255,.6),transparent 45%);}
+.tag{display:inline-block;font-family:ui-monospace,monospace;font-size:.62rem;letter-spacing:.18em;
+  color:var(--cyan);border:1px solid var(--line);border-radius:999px;padding:3px 10px;opacity:.9;}
+
+/* ---------- NAVBAR ---------- */
+header.nav{
+  position:fixed;top:0;left:0;right:0;z-index:60;
+  background:color-mix(in srgb, var(--bg) 72%, transparent);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--line);
+}
+.nav-in{display:flex;align-items:center;gap:16px;height:72px;}
+.brand{display:flex;align-items:center;gap:11px;flex:0 0 auto;}
+.brand .name{font-weight:800;letter-spacing:.06em;font-size:1.02rem;
+  background:linear-gradient(180deg,#ffffff,var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent;}
+html[data-theme="light"] .brand .name{background:linear-gradient(180deg,#0d2033,var(--cyan-deep));-webkit-background-clip:text;background-clip:text;}
+.brand .sub{font-family:ui-monospace,monospace;font-size:.53rem;letter-spacing:.14em;color:var(--text-dim);}
+.links{display:flex;gap:2px;margin-left:auto;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;}
+.links::-webkit-scrollbar{display:none;}
+.links a{font-family:ui-monospace,monospace;font-size:.66rem;letter-spacing:.11em;color:var(--text-dim);
+  padding:8px 10px;border-radius:9px;white-space:nowrap;transition:.2s;}
+.links a:hover,.links a.on{color:var(--cyan);background:rgba(47,216,255,.1);}
+.icon-btn{flex:0 0 auto;width:40px;height:40px;border-radius:12px;border:1px solid var(--line);
+  background:transparent;color:var(--text);font-size:1rem;cursor:pointer;transition:.2s;}
+.icon-btn:hover{box-shadow:var(--glow);border-color:var(--cyan);}
+#burger{display:none;}
+@media(max-width:1300px){
+  .links{position:fixed;top:72px;left:0;right:0;flex-direction:column;overflow:hidden;max-height:0;
+    background:var(--panel-solid);border-bottom:1px solid var(--line);transition:max-height .35s ease;padding:0 4vw;}
+  .links.open{max-height:76vh;overflow-y:auto;padding:10px 4vw 18px;}
+  .links a{font-size:.78rem;padding:11px 8px;}
+  #burger{display:block;margin-left:auto;}
+}
+
+/* ---------- HERO (matches the C.I.D.A LABS poster) ---------- */
+#home{padding-top:112px;padding-bottom:30px;}
+.hero-grid{display:grid;grid-template-columns:1fr 420px;gap:34px;align-items:center;}
+@media(max-width:940px){.hero-grid{grid-template-columns:1fr;}}
+.poster{text-align:center;border-radius:var(--r-lg);border:1px solid var(--line);
+  background:var(--panel);backdrop-filter:blur(14px);padding:34px 26px 30px;box-shadow:var(--shadow),var(--glow-soft);}
+.mascot{width:min(230px,58vw);height:auto;display:block;margin:0 auto 6px;filter:drop-shadow(0 0 18px rgba(47,216,255,.45));}
+.wordmark{font-size:clamp(2.1rem,7vw,3.35rem);font-weight:900;letter-spacing:.04em;margin:2px 0 0;
+  background:linear-gradient(180deg,#ffffff 0%,#bfeaff 45%,var(--cyan) 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  text-shadow:0 0 34px rgba(47,216,255,.35);}
+html[data-theme="light"] .wordmark{background:linear-gradient(180deg,#0d2033,var(--cyan-deep));-webkit-background-clip:text;background-clip:text;}
+.wordmark-rule{width:62%;height:2px;margin:10px auto 8px;border-radius:2px;
+  background:linear-gradient(90deg,transparent,var(--cyan),transparent);box-shadow:var(--glow);}
+.tagline{font-size:clamp(1.4rem,4.4vw,2.1rem);font-weight:800;color:var(--cyan);margin:0 0 4px;
+  text-shadow:0 0 26px rgba(47,216,255,.35);}
+.poster .blurb{color:var(--text-dim);max-width:34ch;margin:8px auto 22px;font-size:.93rem;}
+.cta{display:inline-flex;align-items:center;gap:14px;padding:15px 30px;border-radius:999px;
+  border:2px solid var(--cyan);color:var(--text);font-weight:700;font-size:1.02rem;cursor:pointer;
+  background:transparent;box-shadow:var(--glow),inset 0 0 18px rgba(47,216,255,.12);
+  position:relative;overflow:hidden;transition:.25s;}
+.cta:hover{transform:translateY(-2px);box-shadow:0 0 34px rgba(47,216,255,.5),inset 0 0 22px rgba(47,216,255,.2);}
+.cta .sweep{position:absolute;top:0;bottom:0;width:38%;left:-45%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);transition:left .55s ease;}
+.cta:hover .sweep{left:115%;}
+.cta .divider{width:1px;height:22px;background:var(--cyan);opacity:.6;}
+.cta.ghost{border-color:var(--line);box-shadow:none;font-weight:600;}
+.cta.ghost:hover{border-color:var(--cyan);box-shadow:var(--glow);}
+.cta-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+
+.credits{margin-top:26px;border:1px solid var(--line);border-radius:var(--r-md);padding:16px 14px 14px;}
+.credits-head{display:flex;align-items:center;gap:10px;justify-content:center;color:var(--cyan);
+  font-weight:700;font-size:.95rem;margin-bottom:12px;}
+.credits-head .rule{height:1px;flex:1;background:linear-gradient(90deg,var(--cyan),transparent);opacity:.6;}
+.dev-row{display:grid;grid-template-columns:repeat(4,1fr);}
+@media(max-width:640px){.dev-row{grid-template-columns:repeat(2,1fr);row-gap:16px;}}
+.dev{text-align:center;padding:4px 2px;position:relative;font-size:.86rem;font-weight:600;}
+.dev + .dev::before{content:"";position:absolute;left:0;top:14%;bottom:14%;width:1px;background:var(--line);}
+.dev svg{display:block;margin:0 auto 6px;}
+
+/* right column of hero */
+.scanner-vis{font-family:ui-monospace,monospace;}
+.scanner-vis .row{display:flex;justify-content:space-between;font-size:.66rem;color:var(--text-dim);letter-spacing:.1em;}
+.scanner-frame{position:relative;border:1px solid var(--line);border-radius:var(--r-md);padding:18px;overflow:hidden;
+  background:linear-gradient(180deg,rgba(47,216,255,.07),transparent);}
+.scanner-frame .beam{position:absolute;left:0;right:0;height:56px;pointer-events:none;
+  background:linear-gradient(180deg,transparent,rgba(47,216,255,.18),transparent);animation:beam 3.4s linear infinite;}
+@keyframes beam{0%{top:-60px;}100%{top:100%;}}
+.big-read{font-size:2.6rem;font-weight:800;color:var(--cyan);line-height:1;margin:6px 0;}
+.status-list{list-style:none;margin:16px 0 0;padding:0;display:grid;gap:9px;}
+.status-list li{display:flex;align-items:center;gap:10px;font-family:ui-monospace,monospace;
+  font-size:.7rem;letter-spacing:.11em;color:var(--text-dim);}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green);
+  animation:pulse 2.2s ease-in-out infinite;}
+.dot.c{background:var(--cyan);box-shadow:0 0 10px var(--cyan);animation-delay:.4s;}
+.dot.p{background:var(--purple);box-shadow:0 0 10px var(--purple);animation-delay:.8s;}
+.dot.a{background:var(--amber);box-shadow:0 0 10px var(--amber);animation-delay:1.2s;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.45;transform:scale(.8);}}
+
+/* ---------- STATS ---------- */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:34px;}
+@media(max-width:760px){.stats{grid-template-columns:repeat(2,1fr);}}
+.stat{padding:20px 18px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--panel);
+  backdrop-filter:blur(10px);transition:.25s;}
+.stat:hover{border-color:var(--cyan);box-shadow:var(--glow);transform:translateY(-3px);}
+.stat b{display:block;font-size:2rem;font-weight:800;color:var(--cyan);line-height:1;}
+.stat span{font-family:ui-monospace,monospace;font-size:.64rem;letter-spacing:.14em;color:var(--text-dim);}
+
+/* ---------- GENERIC GRIDS ---------- */
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+.grid-5{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+@media(max-width:980px){.grid-5{grid-template-columns:repeat(2,1fr);}.grid-4{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:820px){.grid-3,.grid-2{grid-template-columns:1fr;}}
+@media(max-width:520px){.grid-4{grid-template-columns:1fr;}}
+
+/* pH nature cards */
+.ph-card{border-radius:var(--r-md);padding:22px;border:1px solid var(--line);background:var(--panel);text-align:center;}
+.ph-card h3{font-size:1.3rem;margin-bottom:2px;}
+.ph-card .v{font-family:ui-monospace,monospace;color:var(--text-dim);letter-spacing:.1em;font-size:.8rem;}
+.ph-card.acid{border-color:rgba(255,95,109,.5);box-shadow:0 0 26px rgba(255,95,109,.14);}
+.ph-card.acid h3{color:var(--red);}
+.ph-card.neut{border-color:rgba(52,224,161,.5);box-shadow:0 0 26px rgba(52,224,161,.14);}
+.ph-card.neut h3{color:var(--green);}
+.ph-card.base{border-color:rgba(155,107,255,.5);box-shadow:0 0 26px rgba(155,107,255,.14);}
+.ph-card.base h3{color:var(--purple);}
+
+/* pH scale bar */
+.scale-wrap{margin-top:26px;}
+.scale-bar{height:20px;border-radius:999px;border:1px solid var(--line);
+  background:linear-gradient(90deg,#ff3b3b,#ff7a2f,#ffd23f,#3ddc84,#2fd8ff,#3f6dff,#9b6bff);
+  box-shadow:0 0 26px rgba(47,216,255,.22);}
+.scale-nums{display:flex;justify-content:space-between;font-family:ui-monospace,monospace;
+  font-size:.66rem;color:var(--text-dim);margin-top:7px;}
+.scale-legend{display:flex;justify-content:space-between;font-family:ui-monospace,monospace;
+  font-size:.62rem;letter-spacing:.14em;color:var(--text-dim);margin-top:3px;}
+
+/* objective / product / indicator cards */
+.obj{display:flex;gap:14px;padding:20px;border-radius:var(--r-md);border:1px solid var(--line);
+  background:var(--panel);transition:.25s;}
+.obj:hover{border-color:var(--cyan);box-shadow:var(--glow);}
+.obj .n{font-family:ui-monospace,monospace;color:var(--cyan);font-size:.8rem;flex:0 0 auto;padding-top:2px;}
+.obj p{margin:0;font-size:.93rem;}
+.prod{border-radius:var(--r-md);border:1px solid var(--line);background:var(--panel);padding:18px;text-align:center;transition:.25s;}
+.prod:hover{transform:translateY(-4px);border-color:var(--cyan);box-shadow:var(--glow);}
+.prod .ico{font-size:1.9rem;}
+.prod .nm{font-weight:700;font-size:.95rem;margin-top:5px;}
+.prod .code{font-family:ui-monospace,monospace;font-size:.62rem;color:var(--cyan);letter-spacing:.16em;}
+.ind{border-radius:var(--r-md);border:1px solid var(--line);background:var(--panel);padding:18px;}
+.ind h4{font-size:.92rem;margin-bottom:4px;}
+.ind p{font-size:.82rem;color:var(--text-dim);margin:0 0 12px;}
+.swatches{display:flex;gap:6px;}
+.sw{width:22px;height:22px;border-radius:7px;border:1px solid rgba(255,255,255,.28);
+  animation:sw-glow 3s ease-in-out infinite;}
+@keyframes sw-glow{0%,100%{box-shadow:0 0 0 rgba(0,0,0,0);}50%{box-shadow:0 0 12px currentColor;}}
+
+/* skin pH */
+.skin-hero{text-align:center;padding:26px;}
+.skin-hero .num{font-size:clamp(2.6rem,8vw,4rem);font-weight:900;color:var(--cyan);line-height:1;
+  text-shadow:0 0 30px rgba(47,216,255,.4);}
+table.data{width:100%;border-collapse:collapse;font-size:.92rem;}
+table.data th,table.data td{padding:12px 14px;text-align:left;border-bottom:1px solid var(--line-soft);}
+table.data th{font-family:ui-monospace,monospace;font-size:.66rem;letter-spacing:.14em;color:var(--cyan);font-weight:600;}
+table.data tbody tr{transition:.2s;}
+table.data tbody tr:hover{background:rgba(47,216,255,.07);box-shadow:inset 0 0 22px rgba(47,216,255,.07);}
+.table-scroll{overflow-x:auto;}
+.notice{margin-top:18px;border-radius:var(--r-md);padding:16px 18px;border:1px solid rgba(255,194,77,.45);
+  background:rgba(255,194,77,.08);color:var(--text);font-size:.9rem;}
+.notice b{color:var(--amber);}
+
+/* accordion */
+.acc{border:1px solid var(--line);border-radius:var(--r-md);background:var(--panel);margin-bottom:12px;overflow:hidden;}
+.acc-head{width:100%;display:flex;align-items:center;gap:14px;padding:16px 18px;background:transparent;
+  border:0;color:var(--text);font:inherit;font-weight:700;cursor:pointer;text-align:left;}
+.acc-head .k{font-family:ui-monospace,monospace;font-size:.68rem;letter-spacing:.14em;color:var(--cyan);}
+.acc-head .chev{margin-left:auto;color:var(--cyan);transition:transform .3s;}
+.acc.open .chev{transform:rotate(180deg);}
+.acc-body{max-height:0;overflow:hidden;transition:max-height .4s ease;}
+.acc-body .inner{padding:0 18px 18px;color:var(--text-dim);font-size:.92rem;}
+.acc-body ol,.acc-body ul{margin:0 0 10px;padding-left:20px;}
+.obs-line{display:flex;align-items:center;gap:10px;margin:7px 0;color:var(--text);font-size:.9rem;}
+
+/* data center */
+.btn{border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--text);
+  font-family:ui-monospace,monospace;font-size:.72rem;letter-spacing:.1em;padding:11px 18px;cursor:pointer;transition:.22s;}
+.btn:hover{border-color:var(--cyan);color:var(--cyan);box-shadow:var(--glow);}
+.btn.solid{background:linear-gradient(120deg,var(--cyan-deep),var(--blue));border-color:transparent;color:#fff;font-weight:700;}
+.btn.solid:hover{filter:brightness(1.12);}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;}
+input.cell,input.field,select.field,input.idfield{
+  width:100%;background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--text);
+  border-radius:10px;padding:9px 11px;font:inherit;font-size:.9rem;transition:.2s;}
+html[data-theme="light"] input.cell,html[data-theme="light"] input.field,
+html[data-theme="light"] select.field,html[data-theme="light"] input.idfield{background:rgba(255,255,255,.9);}
+input.cell:focus,input.field:focus,select.field:focus,input.idfield:focus{border-color:var(--cyan);box-shadow:var(--glow);outline:none;}
+input.cell.ph{max-width:110px;}
+.badge{display:inline-block;font-family:ui-monospace,monospace;font-size:.66rem;letter-spacing:.12em;
+  padding:5px 12px;border-radius:999px;border:1px solid;white-space:nowrap;}
+.badge.acid{color:var(--red);border-color:rgba(255,95,109,.55);background:rgba(255,95,109,.12);box-shadow:0 0 14px rgba(255,95,109,.2);}
+.badge.neut{color:var(--green);border-color:rgba(52,224,161,.55);background:rgba(52,224,161,.12);box-shadow:0 0 14px rgba(52,224,161,.2);}
+.badge.base{color:var(--purple);border-color:rgba(155,107,255,.55);background:rgba(155,107,255,.14);box-shadow:0 0 14px rgba(155,107,255,.2);}
+.badge.none{color:var(--text-dim);border-color:var(--line-soft);}
+
+/* scanner */
+#scanner .glass{padding:30px;}
+.scan-grid{display:grid;grid-template-columns:330px 1fr;gap:26px;}
+@media(max-width:900px){.scan-grid{grid-template-columns:1fr;}}
+label.lbl{display:block;font-family:ui-monospace,monospace;font-size:.66rem;letter-spacing:.16em;
+  color:var(--cyan);margin:16px 0 7px;}
+input[type=range]{width:100%;-webkit-appearance:none;appearance:none;height:8px;border-radius:999px;margin-top:14px;
+  background:linear-gradient(90deg,#ff3b3b,#ff7a2f,#ffd23f,#3ddc84,#2fd8ff,#3f6dff,#9b6bff);}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;
+  background:#fff;border:3px solid var(--cyan);box-shadow:0 0 16px var(--cyan);cursor:pointer;}
+input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:#fff;
+  border:3px solid var(--cyan);box-shadow:0 0 16px var(--cyan);cursor:pointer;}
+.err{display:none;margin-top:12px;color:var(--red);font-size:.85rem;
+  border:1px solid rgba(255,95,109,.5);background:rgba(255,95,109,.1);border-radius:12px;padding:10px 13px;}
+.err.show{display:block;}
+
+.live-scale{position:relative;margin:26px 0 6px;}
+.live-scale .bar{height:22px;border-radius:999px;border:1px solid var(--line);
+  background:linear-gradient(90deg,#ff3b3b,#ff7a2f,#ffd23f,#3ddc84,#2fd8ff,#3f6dff,#9b6bff);}
+#marker{position:absolute;top:-16px;width:26px;height:26px;border-radius:50%;background:#fff;
+  border:3px solid var(--cyan);box-shadow:0 0 20px var(--cyan);transform:translateX(-50%);
+  transition:left .35s cubic-bezier(.2,.8,.2,1);}
+.readouts{display:flex;gap:26px;margin-top:20px;flex-wrap:wrap;}
+.readout .k{font-family:ui-monospace,monospace;font-size:.62rem;letter-spacing:.16em;color:var(--text-dim);}
+.readout .v{font-size:1.8rem;font-weight:800;color:var(--cyan);line-height:1.1;}
+
+.flow{display:grid;gap:0;margin-top:6px;}
+.node{border:1px solid var(--line);border-radius:var(--r-md);padding:14px 18px;background:var(--panel);
+  opacity:0;transform:translateY(12px);transition:.45s;}
+.node.show{opacity:1;transform:none;border-color:var(--cyan);box-shadow:var(--glow);}
+.node .k{font-family:ui-monospace,monospace;font-size:.6rem;letter-spacing:.18em;color:var(--cyan);}
+.node .v{font-size:1.05rem;font-weight:700;}
+.link{height:20px;width:2px;margin:0 auto;background:var(--line);opacity:.3;transition:.4s;}
+.link.show{opacity:1;background:linear-gradient(180deg,var(--cyan),var(--blue));box-shadow:0 0 12px var(--cyan);}
+#processing{display:none;align-items:center;gap:12px;font-family:ui-monospace,monospace;font-size:.74rem;
+  letter-spacing:.16em;color:var(--cyan);margin-bottom:14px;}
+#processing.show{display:flex;}
+.spinner{width:16px;height:16px;border-radius:50%;border:2px solid rgba(47,216,255,.25);border-top-color:var(--cyan);
+  animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.alert{margin-top:14px;border-radius:var(--r-md);padding:14px 16px;border:1px solid rgba(255,95,109,.55);
+  background:rgba(255,95,109,.1);color:var(--text);font-size:.9rem;display:none;}
+.alert.show{display:block;box-shadow:0 0 26px rgba(255,95,109,.2);}
+.disclaimer{margin-top:20px;font-size:.8rem;color:var(--text-dim);border-left:2px solid var(--cyan);padding-left:14px;}
+/* vision panel */
+.vision-panel{margin-top:26px;border-top:1px solid var(--line);padding-top:22px;}
+.vision-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start;}
+@media(max-width:760px){.vision-grid{grid-template-columns:1fr;}}
+.photo-stage{position:relative;margin-top:14px;border:1px solid var(--line);border-radius:var(--r-md);
+  overflow:hidden;display:inline-block;max-width:100%;touch-action:none;background:#000;cursor:crosshair;}
+.photo-stage canvas{display:block;max-width:100%;height:auto;}
+.marker-ring{position:absolute;width:32px;height:32px;margin:-16px 0 0 -16px;border-radius:50%;
+  border:3px solid #fff;box-shadow:0 0 0 2px var(--cyan),0 0 16px rgba(47,216,255,.85);
+  pointer-events:none;top:50%;left:50%;}
+.photo-hint{font-size:.78rem;color:var(--text-dim);margin-top:9px;}
+.vision-result{border:1px solid var(--line);border-radius:var(--r-md);padding:16px 18px;background:var(--panel);height:100%;}
+.vision-result .k{font-family:ui-monospace,monospace;font-size:.62rem;letter-spacing:.16em;color:var(--cyan);}
+.vision-result .v{font-size:1.9rem;font-weight:800;color:var(--text);}
+.swatch-row{display:flex;align-items:center;gap:10px;margin-top:8px;}
+.swatch-big{width:38px;height:38px;border-radius:10px;border:1px solid rgba(255,255,255,.3);
+  display:inline-block;background:#333;flex:0 0 auto;}
+
+/* quick pH entry next to the bar chart */
+.quick-entry{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:10px;margin:12px 0 18px;}
+.quick-entry .qe{border:1px solid var(--line);border-radius:12px;padding:9px 11px;background:var(--panel);}
+.quick-entry .qe .nm{font-size:.66rem;color:var(--text-dim);margin-bottom:6px;font-family:ui-monospace,monospace;
+  letter-spacing:.05em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.quick-entry .qe input{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--text);
+  border-radius:8px;padding:7px 9px;font:inherit;font-size:.9rem;}
+html[data-theme="light"] .quick-entry .qe input{background:rgba(255,255,255,.9);}
+.quick-entry .qe input:focus{border-color:var(--cyan);box-shadow:var(--glow);outline:none;}
+
+/* C.I.D.A Mathematics Input Fix
+   Keep editable controls in the normal DOM above the decorative chart.
+   The canvas is visual only and never receives pointer events. */
+.chart-box canvas{position:relative;z-index:0;pointer-events:none;}
+.quick-entry{position:relative;z-index:5;}
+.quick-entry .qe{position:relative;z-index:6;}
+.quick-entry .qe input{
+  position:relative;
+  z-index:7;
+  pointer-events:auto;
+  cursor:text;
+  -webkit-user-select:text;
+  user-select:text;
+  touch-action:auto;
+}
+.quick-entry .qe input::placeholder{color:var(--text-dim);opacity:.75;}
+.quick-entry .qe input:invalid{border-color:var(--line);}
+@media(max-width:520px){
+  .quick-entry{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+
+
+.example-panel{margin-top:22px;border:1px dashed var(--line);border-radius:var(--r-md);padding:18px;}
+.example-panel dl{display:grid;grid-template-columns:auto 1fr;gap:8px 18px;margin:8px 0 0;font-size:.92rem;}
+.example-panel dt{font-family:ui-monospace,monospace;font-size:.64rem;letter-spacing:.14em;color:var(--text-dim);padding-top:4px;}
+.example-panel dd{margin:0;font-weight:700;}
+
+/* maths */
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px;}
+@media(max-width:760px){.metrics{grid-template-columns:1fr;}}
+.metric{border:1px solid var(--line);border-radius:var(--r-md);background:var(--panel);padding:20px;}
+.metric .k{font-family:ui-monospace,monospace;font-size:.62rem;letter-spacing:.16em;color:var(--text-dim);}
+.metric .v{font-size:2.1rem;font-weight:800;color:var(--cyan);line-height:1.1;}
+.metric .s{font-size:.8rem;color:var(--text-dim);}
+.working{font-family:ui-monospace,monospace;font-size:.82rem;color:var(--text-dim);
+  border:1px solid var(--line-soft);border-radius:var(--r-sm);padding:14px;background:rgba(0,0,0,.14);white-space:pre-wrap;}
+html[data-theme="light"] .working{background:rgba(0,40,80,.04);}
+.chart-box{position:relative;width:100%;}
+canvas{width:100%;display:block;}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:.84rem;}
+.legend i{width:12px;height:12px;border-radius:4px;display:inline-block;margin-right:7px;vertical-align:-1px;}
+
+/* social / sdg */
+.sdg-ring{width:190px;height:190px;margin:0 auto 20px;border-radius:50%;display:grid;place-items:center;
+  border:2px solid rgba(52,224,161,.5);box-shadow:0 0 44px rgba(52,224,161,.28),inset 0 0 34px rgba(52,224,161,.14);
+  background:radial-gradient(circle,rgba(52,224,161,.14),transparent 70%);animation:ring 6s ease-in-out infinite;}
+@keyframes ring{0%,100%{transform:scale(1);}50%{transform:scale(1.035);}}
+.sdg-ring span{font-size:2.6rem;}
+.sdg-pills{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-bottom:18px;}
+.pill{border:1px solid rgba(52,224,161,.45);background:rgba(52,224,161,.09);border-radius:999px;
+  padding:9px 16px;font-size:.86rem;}
+.q{border-left:2px solid var(--cyan);padding-left:14px;margin:10px 0;color:var(--text);font-size:.92rem;}
+
+/* how it thinks */
+.think{display:grid;gap:0;justify-items:center;}
+.tnode{border:1px solid var(--line);border-radius:999px;padding:11px 24px;background:var(--panel);
+  font-family:ui-monospace,monospace;font-size:.72rem;letter-spacing:.12em;color:var(--text);
+  box-shadow:0 0 22px rgba(47,216,255,.12);text-align:center;}
+.tarrow{color:var(--cyan);font-size:1.1rem;line-height:1;padding:6px 0;}
+
+/* conclusion + id */
+.complete{display:inline-flex;align-items:center;gap:12px;border:1px solid var(--cyan);border-radius:999px;
+  padding:13px 26px;font-family:ui-monospace,monospace;letter-spacing:.14em;font-size:.78rem;color:var(--cyan);
+  box-shadow:var(--glow);margin-top:10px;}
+.id-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+@media(max-width:760px){.id-grid{grid-template-columns:1fr;}}
+.id-field .k{font-family:ui-monospace,monospace;font-size:.6rem;letter-spacing:.16em;color:var(--cyan);margin-bottom:6px;}
+footer.foot{padding:34px 0 46px;border-top:1px solid var(--line);text-align:center;
+  font-family:ui-monospace,monospace;font-size:.66rem;letter-spacing:.14em;color:var(--text-dim);}
+
+/* reveal on scroll */
+.reveal{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s ease;}
+.reveal.in{opacity:1;transform:none;}
+
+
+/* ---------- CELESTIAL DAY/NIGHT TRANSITION ---------- */
+#celestial-transition{
+  position:fixed;inset:0;z-index:9999;pointer-events:none;
+  opacity:0;visibility:hidden;overflow:hidden;
+  transition:opacity .18s ease,visibility .18s ease;
+}
+#celestial-transition.active{
+  opacity:1;visibility:visible;
+}
+.celestial-sky{
+  position:absolute;inset:0;
+  background:radial-gradient(circle at 50% 54%,rgba(255,220,116,.22),transparent 22%),
+             linear-gradient(180deg,#07152a 0%,#102f4c 52%,#07111f 100%);
+  transform:scale(1.03);
+}
+.celestial-stars{
+  position:absolute;inset:0;opacity:.75;
+  background-image:
+    radial-gradient(circle at 12% 22%,#fff 0 1px,transparent 1.5px),
+    radial-gradient(circle at 28% 72%,#fff 0 1px,transparent 1.5px),
+    radial-gradient(circle at 43% 18%,#fff 0 1px,transparent 1.5px),
+    radial-gradient(circle at 62% 30%,#fff 0 1px,transparent 1.5px),
+    radial-gradient(circle at 78% 70%,#fff 0 1px,transparent 1.5px),
+    radial-gradient(circle at 91% 24%,#fff 0 1px,transparent 1.5px),
+    radial-gradient(circle at 73% 12%,#fff 0 1px,transparent 1.5px),
+    radial-gradient(circle at 19% 48%,#fff 0 1px,transparent 1.5px);
+  animation:starTwinkle 1.8s ease-in-out infinite alternate;
+}
+.celestial-sun,.celestial-moon{
+  position:absolute;left:50%;top:50%;
+  width:130px;height:130px;border-radius:50%;
+  transform-origin:center;
+}
+.celestial-sun{
+  background:radial-gradient(circle at 38% 34%,#fffbd0 0 8%,#ffe36e 25%,#ffad27 62%,#ff7a00 100%);
+  box-shadow:0 0 28px #ffd45a,0 0 75px rgba(255,180,40,.8),0 0 160px rgba(255,150,20,.35);
+  animation:sunJourney 2.25s cubic-bezier(.2,.78,.2,1) forwards;
+}
+.sun-core{
+  position:absolute;inset:20%;border-radius:50%;
+  background:radial-gradient(circle,#fffde0,#ffd34f 70%,transparent 71%);
+  filter:blur(1px);
+}
+.sun-ray{
+  position:absolute;left:50%;top:50%;width:8px;height:170px;
+  margin:-85px 0 0 -4px;border-radius:50%;
+  background:linear-gradient(transparent,rgba(255,225,100,.75),transparent);
+  transform-origin:center;
+}
+.r1{transform:rotate(0deg)} .r2{transform:rotate(45deg)}
+.r3{transform:rotate(90deg)} .r4{transform:rotate(135deg)}
+.r5{transform:rotate(180deg)} .r6{transform:rotate(225deg)}
+.r7{transform:rotate(270deg)} .r8{transform:rotate(315deg)}
+.celestial-moon{
+  background:radial-gradient(circle at 36% 30%,#f6f8ff,#cbd4e4 65%,#8f9bad 100%);
+  box-shadow:0 0 25px rgba(220,235,255,.75),0 0 80px rgba(180,210,255,.4);
+  animation:moonJourney 2.25s cubic-bezier(.2,.78,.2,1) forwards;
+}
+.moon-crater{
+  position:absolute;border-radius:50%;background:rgba(105,116,134,.2);
+  box-shadow:inset 2px 2px 5px rgba(70,80,95,.2);
+}
+.c1{width:20px;height:20px;left:30px;top:28px}
+.c2{width:12px;height:12px;left:72px;top:58px}
+.c3{width:25px;height:25px;left:54px;top:82px}
+.celestial-horizon{
+  position:absolute;left:-10%;right:-10%;bottom:-20%;
+  height:45%;border-radius:50% 50% 0 0;
+  background:linear-gradient(180deg,rgba(4,10,18,.08),rgba(2,6,12,.8));
+  filter:blur(8px);
+}
+#celestial-transition.light-transition .celestial-sky{
+  background:linear-gradient(180deg,#78c8ff 0%,#bcecff 48%,#f9d88c 100%);
+}
+#celestial-transition.light-transition .celestial-stars{opacity:0;}
+#celestial-transition.light-transition .celestial-sun{
+  animation:sunOut 2.25s cubic-bezier(.2,.78,.2,1) forwards;
+}
+#celestial-transition.light-transition .celestial-moon{
+  animation:moonOut 2.25s cubic-bezier(.2,.78,.2,1) forwards;
+}
+@keyframes sunJourney{
+  0%{transform:translate(-50%,-50%) rotate(0deg) scale(.35);opacity:0;}
+  18%{opacity:1;}
+  55%{transform:translate(-50%,-150%) rotate(160deg) scale(1.08);}
+  100%{transform:translate(120%,-210%) rotate(360deg) scale(.65);opacity:.15;}
+}
+@keyframes moonJourney{
+  0%{transform:translate(120%,180%) rotate(-90deg) scale(.55);opacity:.1;}
+  48%{opacity:1;}
+  100%{transform:translate(-50%,-50%) rotate(0deg) scale(1);opacity:1;}
+}
+@keyframes sunOut{
+  0%{transform:translate(-50%,-50%) rotate(0deg) scale(1);}
+  100%{transform:translate(-120%,210%) rotate(-360deg) scale(.55);opacity:0;}
+}
+@keyframes moonOut{
+  0%{transform:translate(-50%,-50%) rotate(0deg) scale(1);opacity:1;}
+  48%{opacity:1;}
+  100%{transform:translate(120%,-210%) rotate(360deg) scale(.65);opacity:0;}
+}
+@keyframes starTwinkle{from{opacity:.3;transform:scale(.98)}to{opacity:.9;transform:scale(1.02)}}
+
+/* ---------- CINEMATIC IMMERSIVE MOTION ---------- */
+#aurora-layer{
+  position:fixed;inset:-18%;z-index:-3;pointer-events:none;
+  background:
+    radial-gradient(42% 32% at 18% 28%,rgba(47,216,255,.12),transparent 70%),
+    radial-gradient(36% 30% at 82% 24%,rgba(77,124,255,.11),transparent 70%),
+    radial-gradient(40% 34% at 54% 82%,rgba(155,107,255,.10),transparent 72%);
+  filter:blur(18px);
+  animation:auroraShift 24s ease-in-out infinite alternate;
+}
+#grid-layer{
+  position:fixed;inset:0;z-index:-2;pointer-events:none;opacity:.18;
+  background:
+    linear-gradient(rgba(47,216,255,.06) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(47,216,255,.06) 1px,transparent 1px);
+  background-size:72px 72px;
+  mask-image:linear-gradient(to bottom,transparent 0%,black 20%,black 80%,transparent 100%);
+  animation:gridDrift 28s linear infinite;
+}
+#particle-field{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;}
+.cida-particle{
+  position:absolute;width:2px;height:2px;border-radius:50%;
+  background:var(--cyan);box-shadow:0 0 8px var(--cyan);
+  opacity:.25;animation:particleFloat linear infinite;
+}
+#mouse-glow{
+  position:fixed;left:0;top:0;width:360px;height:360px;margin:-180px;
+  border-radius:50%;pointer-events:none;z-index:-1;
+  background:radial-gradient(circle,rgba(47,216,255,.13),rgba(47,216,255,.04) 25%,transparent 68%);
+  mix-blend-mode:screen;opacity:.7;
+  transform:translate3d(-1000px,-1000px,0);
+  transition:transform .16s ease-out;
+}
+.poster,.glass,.stat,.metric,.prod,.obj,.acc,.node,.ph-card,.vision-result{
+  transition:transform .45s cubic-bezier(.2,.75,.25,1),box-shadow .45s ease,border-color .45s ease;
+}
+.poster:hover,.glass:hover,.stat:hover,.metric:hover,.prod:hover,.obj:hover,.acc:hover,.node:hover,.ph-card:hover,.vision-result:hover{
+  transform:translateY(-4px);
+  box-shadow:var(--shadow),0 0 32px rgba(47,216,255,.12);
+  border-color:rgba(47,216,255,.38);
+}
+.poster{overflow:hidden;}
+.poster::before{
+  content:"";position:absolute;inset:-2px;pointer-events:none;border-radius:inherit;
+  background:linear-gradient(120deg,transparent 25%,rgba(255,255,255,.13) 48%,transparent 62%);
+  transform:translateX(-120%);animation:glassSweep 7s ease-in-out infinite;
+}
+.hero .poster::after{
+  content:"";position:absolute;left:10%;right:10%;bottom:8%;
+  height:1px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);
+  box-shadow:0 0 18px var(--cyan);opacity:.35;animation:energyPulse 3.2s ease-in-out infinite;
+}
+.mascot{animation:mascotFloat 5.5s ease-in-out infinite,mascotGlow 3.5s ease-in-out infinite alternate;}
+.wordmark{animation:titlePulse 4s ease-in-out infinite;}
+.wordmark-rule{animation:rulePulse 2.8s ease-in-out infinite;}
+.scanline{
+  position:absolute;left:0;right:0;height:2px;pointer-events:none;
+  background:linear-gradient(90deg,transparent,var(--cyan),transparent);
+  box-shadow:0 0 14px var(--cyan);opacity:.7;
+  animation:scannerSweep 3.8s ease-in-out infinite;
+}
+.section-signal{
+  position:absolute;left:0;top:0;width:100%;height:1px;pointer-events:none;
+  background:linear-gradient(90deg,transparent,var(--cyan),transparent);
+  opacity:.22;box-shadow:0 0 14px var(--cyan);
+  animation:signalTravel 8s linear infinite;
+}
+@keyframes auroraShift{
+  0%{transform:translate3d(-2%,-1%,0) rotate(0deg) scale(1);}
+  50%{transform:translate3d(2%,2%,0) rotate(2deg) scale(1.04);}
+  100%{transform:translate3d(-1%,3%,0) rotate(-2deg) scale(1.08);}
+}
+@keyframes gridDrift{from{background-position:0 0,0 0;}to{background-position:0 72px,72px 0;}}
+@keyframes particleFloat{
+  0%{transform:translate3d(0,110vh,0) scale(.7);opacity:0;}
+  10%{opacity:.35;} 50%{transform:translate3d(28px,45vh,0) scale(1);}
+  90%{opacity:.15;} 100%{transform:translate3d(-24px,-10vh,0) scale(.5);opacity:0;}
+}
+@keyframes glassSweep{0%,55%{transform:translateX(-120%);}72%,100%{transform:translateX(120%);}}
+@keyframes energyPulse{0%,100%{opacity:.18;transform:scaleX(.7);}50%{opacity:.7;transform:scaleX(1);}}
+@keyframes mascotFloat{0%,100%{transform:translateY(0) rotate(-1deg);}50%{transform:translateY(-10px) rotate(1deg);}}
+@keyframes mascotGlow{from{filter:drop-shadow(0 0 12px rgba(47,216,255,.28));}to{filter:drop-shadow(0 0 28px rgba(47,216,255,.62));}}
+@keyframes titlePulse{0%,100%{filter:drop-shadow(0 0 0 rgba(47,216,255,0));}50%{filter:drop-shadow(0 0 13px rgba(47,216,255,.22));}}
+@keyframes rulePulse{0%,100%{opacity:.55;transform:scaleX(.85);}50%{opacity:1;transform:scaleX(1);}}
+@keyframes scannerSweep{0%{top:4%;opacity:0;}15%{opacity:.8;}85%{opacity:.55;}100%{top:96%;opacity:0;}}
+@keyframes signalTravel{0%{transform:translateX(-60%);opacity:0;}15%{opacity:.4;}85%{opacity:.2;}100%{transform:translateX(60%);opacity:0;}}
+
+/* ---------- CELESTIAL REDUCED MOTION ---------- */
+@media(prefers-reduced-motion:reduce){
+  #celestial-transition{display:none!important;}
+}
+
+@media(prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important;}
+  .reveal{opacity:1;transform:none;}
+}
+
+/* ---------- PRINT ---------- */
+@media print{
+  header.nav,#bg-layer,#aurora-layer,#grid-layer,#particle-field,#mouse-glow,#hex-layer,#scan-layer,#blob-a,#blob-b,.spark,.section-signal,.scanline,.btn,.cta,.icon-btn,#burger{display:none!important;}
+  body{background:#fff!important;color:#000!important;}
+  .glass,.stat,.prod,.ind,.obj,.acc,.metric,.node,.ph-card{background:#fff!important;border:1px solid #999!important;
+    box-shadow:none!important;backdrop-filter:none!important;color:#000!important;}
+  .acc-body{max-height:none!important;}
+  .node,.link,.reveal{opacity:1!important;transform:none!important;}
+  .wordmark,.tagline,.metric .v,.readout .v,.stat b,.skin-hero .num{color:#000!important;
+    -webkit-text-fill-color:#000!important;text-shadow:none!important;}
+  section.band{padding:18px 0;page-break-inside:avoid;}
+  .eyebrow,.tag{color:#444!important;}
+}
+</style>
+</head>
+<body>
+<!-- C.I.D.A immersive celestial day/night transition -->
+<div id="celestial-transition" aria-hidden="true">
+  <div class="celestial-sky">
+    <div class="celestial-stars"></div>
+    <div class="celestial-sun">
+      <span class="sun-core"></span>
+      <span class="sun-ray r1"></span><span class="sun-ray r2"></span>
+      <span class="sun-ray r3"></span><span class="sun-ray r4"></span>
+      <span class="sun-ray r5"></span><span class="sun-ray r6"></span>
+      <span class="sun-ray r7"></span><span class="sun-ray r8"></span>
+    </div>
+    <div class="celestial-moon">
+      <span class="moon-crater c1"></span><span class="moon-crater c2"></span>
+      <span class="moon-crater c3"></span>
+    </div>
+    <div class="celestial-horizon"></div>
+  </div>
+</div>
+
+
+<!-- ============ BACKGROUND LAYERS ============ -->
+<div id="bg-layer"></div>
+<div id="aurora-layer" aria-hidden="true"></div>
+<div id="grid-layer" aria-hidden="true"></div>
+<div id="particle-field" aria-hidden="true"></div>
+<div id="mouse-glow" aria-hidden="true"></div>
+<svg id="hex-layer" aria-hidden="true">
+  <defs>
+    <pattern id="hexpat" width="56" height="100" patternUnits="userSpaceOnUse" patternTransform="scale(.62)">
+      <path d="M28 66L0 50L0 16L28 0L56 16L56 50L28 66L28 100" fill="none" stroke="var(--hex)" stroke-width="1.1"/>
+      <path d="M28 0L28 34L0 50M28 34L56 50" fill="none" stroke="var(--hex)" stroke-width="1.1"/>
+    </pattern>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#hexpat)"/>
+</svg>
+<div id="blob-a"></div><div id="blob-b"></div>
+<div id="scan-layer"></div>
+
+<!-- ============ NAVBAR ============ -->
+<header class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="#home">
+      <svg width="36" height="36" viewBox="0 0 48 48" aria-hidden="true">
+        <defs><linearGradient id="dg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#bff0ff"/><stop offset="1" stop-color="#2fd8ff"/></linearGradient></defs>
+        <path d="M24 4C24 4 38 20 38 30a14 14 0 1 1-28 0C10 20 24 4 24 4Z" fill="none" stroke="url(#dg)" stroke-width="2.4"/>
+        <path d="M14 31h20" stroke="#2fd8ff" stroke-width="2" stroke-linecap="round" opacity=".8"/>
+        <circle cx="19" cy="31" r="2.6" fill="#2fd8ff"><animate attributeName="opacity" values="1;.35;1" dur="2.4s" repeatCount="indefinite"/></circle>
+      </svg>
+      <span>
+        <span class="name">C.I.D.A LABS</span><br>
+        <span class="sub">CHEMICAL INDICATOR &amp; DERMAL ADVISOR</span>
+      </span>
+    </a>
+    <nav class="links" id="links">
+      <a href="#home">HOME</a><a href="#intro">INTRO</a><a href="#objectives">OBJECTIVES</a>
+      <a href="#materials">MATERIALS</a><a href="#indicators">INDICATORS</a><a href="#skin">SKIN pH</a>
+      <a href="#procedure">PROCEDURE</a><a href="#data">DATA</a><a href="#scanner">AI SCANNER</a>
+      <a href="#maths">MATHEMATICS</a><a href="#results">RESULTS</a><a href="#social">SOCIAL</a><a href="#sdg">SDG</a>
+    </nav>
+    <button class="icon-btn" id="burger" aria-label="Open menu" aria-expanded="false">☰</button>
+    <button class="icon-btn" id="theme" aria-label="Switch theme">🌙</button>
+  </div>
+</header>
+
+<!-- ============ HERO ============ -->
+<section class="band" id="home"><div class="section-signal" aria-hidden="true"></div>
+  <div class="wrap hero-grid">
+
+    <!-- poster panel (the C.I.D.A LABS interface) -->
+    <div class="poster"><div class="scanline" aria-hidden="true"></div>
+      <!-- Mascot: lab cat holding a flask and a pH colour chart -->
+      <svg class="mascot" viewBox="0 0 240 200" role="img" aria-label="C.I.D.A lab cat mascot holding a flask and a pH colour chart">
+        <defs>
+          <linearGradient id="fur" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d7ecf7"/></linearGradient>
+          <linearGradient id="liq" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#5fe6ff"/><stop offset="1" stop-color="#1d6bff"/></linearGradient>
+          <linearGradient id="shield" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#2fd8ff"/><stop offset="1" stop-color="#4d7cff"/></linearGradient>
+        </defs>
+        <!-- hex shield behind -->
+        <path d="M120 16 176 46v62l-56 30-56-30V46Z" fill="none" stroke="url(#shield)" stroke-width="2.5" opacity=".65"/>
+        <!-- ears -->
+        <path d="M74 66 70 26l34 22Z" fill="url(#fur)" stroke="#2fd8ff" stroke-width="2.2" stroke-linejoin="round"/>
+        <path d="M166 66 170 26l-34 22Z" fill="url(#fur)" stroke="#2fd8ff" stroke-width="2.2" stroke-linejoin="round"/>
+        <path d="M78 60 76 38l20 13Z" fill="#7fe4ff" opacity=".65"/>
+        <path d="M162 60 164 38l-20 13Z" fill="#7fe4ff" opacity=".65"/>
+        <!-- head -->
+        <ellipse cx="120" cy="82" rx="49" ry="42" fill="url(#fur)" stroke="#2fd8ff" stroke-width="2.4"/>
+        <!-- eyes -->
+        <ellipse cx="103" cy="78" rx="9" ry="11" fill="#12e6ff"/>
+        <ellipse cx="137" cy="78" rx="9" ry="11" fill="#12e6ff"/>
+        <ellipse cx="103" cy="78" rx="3.4" ry="8" fill="#052030"/>
+        <ellipse cx="137" cy="78" rx="3.4" ry="8" fill="#052030"/>
+        <circle cx="106" cy="73" r="2.4" fill="#fff"/><circle cx="140" cy="73" r="2.4" fill="#fff"/>
+        <!-- nose + mouth -->
+        <path d="M116 94h8l-4 5Z" fill="#8fd7ef"/>
+        <path d="M120 99c-3 5-10 4-12 0M120 99c3 5 10 4 12 0" fill="none" stroke="#8fd7ef" stroke-width="2" stroke-linecap="round"/>
+        <!-- whiskers -->
+        <g stroke="#bfe9f8" stroke-width="1.8" stroke-linecap="round" opacity=".85">
+          <path d="M72 88H52M74 96l-19 6M168 88h20M166 96l19 6"/>
+        </g>
+        <!-- collar -->
+        <path d="M86 112q34 18 68 0" fill="none" stroke="#2fd8ff" stroke-width="5" stroke-linecap="round"/>
+        <circle cx="120" cy="124" r="5" fill="#12e6ff"/>
+        <!-- left paw + flask -->
+        <g>
+          <path d="M60 128h22l10 26H50Z" fill="none" stroke="#2fd8ff" stroke-width="2.4" stroke-linejoin="round"/>
+          <path d="M66 122h10v10h-10Z" fill="none" stroke="#2fd8ff" stroke-width="2.4"/>
+          <path d="M56 142h30l6 12H50Z" fill="url(#liq)" opacity=".92"/>
+          <circle cx="66" cy="148" r="2.4" fill="#eaffff" opacity=".8">
+            <animate attributeName="cy" values="150;140;150" dur="2.6s" repeatCount="indefinite"/></circle>
+          <circle cx="76" cy="150" r="1.8" fill="#eaffff" opacity=".7">
+            <animate attributeName="cy" values="152;142;152" dur="3.1s" repeatCount="indefinite"/></circle>
+          <ellipse cx="88" cy="128" rx="14" ry="11" fill="url(#fur)" stroke="#2fd8ff" stroke-width="2.2"/>
+        </g>
+        <!-- right paw + pH colour chart -->
+        <g>
+          <rect x="152" y="120" width="52" height="40" rx="6" fill="#06192b" stroke="#2fd8ff" stroke-width="2.2"/>
+          <rect x="158" y="126" width="18" height="12" rx="2" fill="#ff3b3b"/>
+          <rect x="180" y="126" width="18" height="12" rx="2" fill="#ffd23f"/>
+          <rect x="158" y="142" width="18" height="12" rx="2" fill="#3ddc84"/>
+          <rect x="180" y="142" width="18" height="12" rx="2" fill="#9b6bff"/>
+          <ellipse cx="150" cy="130" rx="14" ry="11" fill="url(#fur)" stroke="#2fd8ff" stroke-width="2.2"/>
+        </g>
+      </svg>
+
+      <h1 class="wordmark">C.I.D.A LABS</h1>
+      <div class="wordmark-rule"></div>
+      <p class="tagline">pH Advisor</p>
+      <p class="blurb">Test a toiletry, enter its pH, and C.I.D.A tells you whether it is acidic, neutral or basic — and which skin types it suits.</p>
+
+      <div class="cta-row">
+        <button class="cta" data-go="#scanner">
+          <span class="sweep"></span>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 3h6M10 3v6L5 19a1.6 1.6 0 0 0 1.4 2.4h11.2A1.6 1.6 0 0 0 19 19l-5-10V3"/></svg>
+          <span class="divider"></span>
+          Start testing
+        </button>
+        <button class="cta ghost" data-go="#intro">Explore project</button>
+      </div>
+
+      <div class="credits">
+        <div class="credits-head">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+            <path d="M12 2 21 7v10l-9 5-9-5V7Z"/><circle cx="12" cy="12" r="3"/></svg>
+          Developed by <span class="rule"></span>
+        </div>
+        <div class="dev-row">
+          <div class="dev">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="1.6" stroke-linecap="round"><path d="M9 11V5a1.5 1.5 0 0 1 3 0v6M12 11V4a1.5 1.5 0 0 1 3 0v7M15 11V6a1.5 1.5 0 0 1 3 0v9a6 6 0 0 1-6 6h-1a6 6 0 0 1-6-6v-4a1.5 1.5 0 0 1 3 0"/></svg>
+            Clive</div>
+          <div class="dev">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18M3 12h18"/></svg>
+            Ishan</div>
+          <div class="dev">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7 3 12l5 5M16 7l5 5-5 5"/></svg>
+            Dhanwin</div>
+          <div class="dev">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7 4 12l5 5M15 7l5 5-5 5M13 5l-2 14"/></svg>
+            Aarush</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- scanner visual + status -->
+    <div>
+      <div class="glass scanner-vis">
+        <div class="tag">SYSTEM 01 · pH ANALYSIS</div>
+        <div class="scanner-frame" style="margin-top:14px">
+          <div class="beam"></div>
+          <div class="row"><span>C.I.D.A</span><span>SYSTEM ONLINE</span></div>
+          <div class="big-read">READY</div>
+          <div class="row" style="margin-bottom:8px"><span>pH ANALYSIS</span><span>0 — 14</span></div>
+          <div class="scale-bar" style="height:14px"></div>
+          <div class="scale-legend"><span>ACIDIC</span><span>NEUTRAL</span><span>BASIC</span></div>
+        </div>
+        <ul class="status-list">
+          <li><span class="dot"></span>SYSTEM ONLINE</li>
+          <li><span class="dot c"></span>AI ENGINE READY</li>
+          <li><span class="dot p"></span>pH DATABASE ACTIVE</li>
+          <li><span class="dot a"></span>OFFLINE MODE ENABLED</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="stats reveal">
+      <div class="stat"><b data-count="7">0</b><span>SAMPLE PRODUCTS</span></div>
+      <div class="stat"><b>0–14</b><span>pH RANGE</span></div>
+      <div class="stat"><b data-count="5">0</b><span>INDICATORS</span></div>
+      <div class="stat"><b data-count="1">0</b><span>AI ADVISOR</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ INTRODUCTION ============ -->
+<section class="band" id="intro"><div class="section-signal" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="glass reveal">
+      <div class="eyebrow">BIO-CHEMISTRY</div>
+      <h2 class="sec-title">Introduction</h2>
+      <p class="sec-lead">Many everyday products — shampoo, soap, face wash, hand wash, cream, dishwashing liquid and detergent — contain chemicals that may be acidic, neutral or basic. The pH scale tells us which one a product is, and products with a pH close to human skin are generally safer for regular use.</p>
+
+      <div class="grid-3" style="margin-top:22px">
+        <div class="ph-card acid reveal"><h3>Acidic</h3><div class="v">pH &lt; 7</div></div>
+        <div class="ph-card neut reveal"><h3>Neutral</h3><div class="v">pH = 7</div></div>
+        <div class="ph-card base reveal"><h3>Basic</h3><div class="v">pH &gt; 7</div></div>
+      </div>
+
+      <div class="scale-wrap reveal">
+        <div class="scale-bar"></div>
+        <div class="scale-nums"><span>0</span><span>2</span><span>4</span><span>6</span><span>7</span><span>8</span><span>10</span><span>12</span><span>14</span></div>
+        <div class="scale-legend"><span>ACIDIC</span><span>NEUTRAL</span><span>BASIC</span></div>
+      </div>
+
+      <!-- C.I.D.A Project Credits -->
+      <div class="credits reveal" style="margin-top:24px">
+        <div class="credits-head">
+          <span>PROJECT CREDITS</span><span class="rule"></span>
+        </div>
+        <div class="dev-row">
+          <div class="dev"><div class="k" style="font-family:ui-monospace,monospace;font-size:.58rem;letter-spacing:.12em;color:var(--cyan)">PROGRAMMED BY</div><strong>AARUSH</strong></div>
+          <div class="dev"><div class="k" style="font-family:ui-monospace,monospace;font-size:.58rem;letter-spacing:.12em;color:var(--cyan)">INTERFACE DESIGNER</div><strong>ISHAN</strong></div>
+          <div class="dev"><div class="k" style="font-family:ui-monospace,monospace;font-size:.58rem;letter-spacing:.12em;color:var(--cyan)">PHYSICAL MODEL TESTER</div><strong>CLIVE</strong></div>
+          <div class="dev"><div class="k" style="font-family:ui-monospace,monospace;font-size:.58rem;letter-spacing:.12em;color:var(--cyan)">CO PROGRAMMER</div><strong>DHANWIN</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ OBJECTIVES ============ -->
+<section class="band" id="objectives"><div class="section-signal" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="eyebrow reveal">SCIENCE LAB</div>
+    <h2 class="sec-title reveal">Objectives</h2>
+    <div class="grid-2 reveal" style="margin-top:18px">
+      <div class="obj"><span class="n">01</span><p>Determine the pH nature of common toiletries.</p></div>
+      <div class="obj"><span class="n">02</span><p>Understand the relationship between pH and skin health.</p></div>
+      <div class="obj"><span class="n">03</span><p>Create a simple AI-based detector.</p></div>
+      <div class="obj"><span class="n">04</span><p>Analyze data using mathematical tools.</p></div>
+      <div class="obj" style="grid-column:1/-1"><span class="n">05</span><p>Study the social and environmental impact of toiletries.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MATERIALS ============ -->
+<section class="band" id="materials"><div class="section-signal" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="eyebrow reveal">DATA CORE</div>
+    <h2 class="sec-title reveal">Materials and samples</h2>
+    <p class="sec-lead reveal">Small cups, a spoon or stirrer, water, a notebook, a mobile phone or laptop, and seven toiletries labelled A to G.</p>
+    <div class="grid-4 reveal" id="product-cards" style="margin-top:20px"></div>
+  </div>
+</section>
+
+<!-- ============ INDICATORS ============ -->
+<section class="band" id="indicators"><div class="section-signal" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="eyebrow reveal">AI MODULE · INPUT SOURCES</div>
+    <h2 class="sec-title reveal">Indicators</h2>
+    <div class="grid-5 reveal" style="margin-top:20px">
+      <div class="ind"><h4>pH strips</h4><p>Direct numerical pH measurement.</p>
+        <div class="swatches"><span class="sw" style="background:#ff3b3b;color:#ff3b3b"></span><span class="sw" style="background:#ffd23f;color:#ffd23f"></span><span class="sw" style="background:#3ddc84;color:#3ddc84"></span><span class="sw" style="background:#9b6bff;color:#9b6bff"></span></div></div>
+      <div class="ind"><h4>Red litmus</h4><p>Useful for identifying basic substances.</p>
+        <div class="swatches"><span class="sw" style="background:#ff4d4d;color:#ff4d4d"></span><span class="sw" style="background:#4d7cff;color:#4d7cff"></span></div></div>
+      <div class="ind"><h4>Blue litmus</h4><p>Useful for identifying acidic substances.</p>
+        <div class="swatches"><span class="sw" style="background:#4d7cff;color:#4d7cff"></span><span class="sw" style="background:#ff4d4d;color:#ff4d4d"></span></div></div>
+      <div class="ind"><h4>Red cabbage</h4><p>Natural colour-changing indicator.</p>
+        <div class="swatches"><span class="sw" style="background:#ff5f8d;color:#ff5f8d"></span><span class="sw" style="background:#9b6bff;color:#9b6bff"></span><span class="sw" style="background:#3ddc84;color:#3ddc84"></span></div></div>
+      <div class="ind"><h4>Turmeric</h4><p>Natural indicator for basic substances.</p>
+        <div class="swatches"><span class="sw" style="background:#ffd23f;color:#ffd23f"></span><span class="sw" style="background:#a6572a;color:#a6572a"></span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SKIN pH ============ -->
+<section class="band" id="skin"><div class="section-signal" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="glass reveal">
+      <div class="eyebrow">WELL-BEING</div>
+      <h2 class="sec-title">Skin pH</h2>
+      <div class="skin-hero">
+        <div class="num">4.5 – 5.5</div>
+        <div class="tag">AVERAGE HEALTHY SKIN pH</div>
+      </div>
+      <p class="sec-lead" style="margin:0 auto;text-align:center">Healthy human skin is slightly acidic. This mild acidity helps support the skin barrier and protects the skin from harmful bacteria.</p>
+
+      <div class="table-scroll" style="margin-top:24px">
+        <table class="data">
+          <thead><tr><th>SKIN TYPE</th><th>SUITABLE PRODUCT pH</th></tr></thead>
+          <tbody>
+            <tr><td>Dry skin</td><td>5.0 – 6.0</td></tr>
+            <tr><td>Sensitive skin</td><td>5.0 – 6.0</td></tr>
+            <tr><td>Normal skin</td><td>5.0 – 6.5</td></tr>
+            <tr><td>Oily skin</td><td>4.5 – 6.0</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="notice">⚠️ <b>Safety notice.</b> Products with a pH above 8 may cause dryness and irritation when used frequently.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PROCEDURE ============ -->
+<section class="band" id="procedure"><div class="section-signal" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="eyebrow reveal">SCIENCE LAB · METHOD</div>
+    <h2 class="sec-title reveal">Testing procedure</h2>
+
+    <div class="reveal" style="margin-top:18px">
+      <div class="acc">
+        <button class="acc-head"><span class="k">STEP 01</span> Prepare the samples <span class="chev">▾</span></button>
+        <div class="acc-body"><div class="inner">
+          <ol><li>Label the cups A, B, C, D, E, F and G.</li>
+          <li>Place a small amount of each product into a separate cup.</li>
+          <li>Add one tablespoon of water.</li>
+          <li>Mix gently.</li></ol>
+        </div></div>
+      </div>
+
+      <div class="acc">
+        <button class="acc-head"><span class="k">STEP 02 · A</span> Test with pH strips <span class="chev">▾</span></button>
+        <div class="acc-body"><div class="inner">
+          <ol><li>Dip the strip into the sample.</li><li>Wait 2–3 seconds.</li>
+          <li>Compare the colour with the chart.</li><li>Record the pH value.</li></ol>
+        </div></div>
+      </div>
+
+      <div class="acc">
+        <button class="acc-head"><span class="k">STEP 02 · B</span> Test with red cabbage indicator <span class="chev">▾</span></button>
+        <div class="acc-body"><div class="inner">
+          <ol><li>Chop red cabbage leaves.</li><li>Soak them in hot water for 15 minutes.</li><li>Filter the purple liquid.</li></ol>
+          <div class="obs-line"><span class="sw" style="background:#ff5f8d;color:#ff5f8d"></span> Red or pink = acidic</div>
+          <div class="obs-line"><span class="sw" style="background:#9b6bff;color:#9b6bff"></span> Purple = neutral</div>
+          <div class="obs-line"><span class="sw" style="background:#3ddc84;color:#3ddc84"></span> Green or blue = basic</div>
+        </div></div>
+      </div>
+
+      <div class="acc">
+        <button class="acc-head"><span class="k">STEP 02 · C</span> Test with turmeric indicator <span class="chev">▾</span></button>
+        <div class="acc-body"><div class="inner">
+          <p>Add a few drops of turmeric solution to the sample.</p>
+          <div class="obs-line"><span class="sw" style="background:#ffd23f;color:#ffd23f"></span> Yellow stays yellow = acidic or neutral</div>
+          <div class="obs-line"><span class="sw" style="background:#a6572a;color:#a6572a"></span> Yellow turns reddish-brown = basic</div>
+        </div></div>
+      </div>
+
+      <div class="acc">
+        <button class="acc-head"><span class="k">STEP 02 · D</span> Test with litmus paper <span class="chev">▾</span></button>
+        <div class="acc-body"><div class="inner">
+          <div class="obs-line"><span class="sw" style="background:#4d7cff;color:#4d7cff"></span> Blue litmus turns red = acidic</div>
+          <div class="obs-line"><span class="sw" style="background:#ff4d4d;color:#ff4d4d"></span> Red litmus turns blue = basic</div>
+          <div class="obs-line"><span class="sw" style="background:#e8eef5;color:#e8eef5"></span> No change = neutral</div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DATA CENTER ============ -->
+<section class="band" id="data"><div class="section-signal" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="glass reveal">
+      <div class="eyebrow">DATA CORE</div>
+      <h2 class="sec-title">C.I.D.A data center</h2>
+      <p class="sec-lead">Type your own observations and pH readings. The nature column, the charts and the mathematics update by themselves.</p>
+
+      <div class="table-scroll" style="margin-top:20px">
+        <table class="data" id="obs-table">
+          <thead><tr><th>PRODUCT</th><th>INDICATOR OBSERVATION</th><th>ESTIMATED pH</th><th>NATURE</th></tr></thead>
+          <tbody id="obs-body"></tbody>
+        </table>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn solid" id="load-sample">LOAD SAMPLE DATA</button>
+        <button class="btn" id="clear-table">CLEAR TABLE</button>
+        <button class="btn" id="export-csv">EXPORT MY DATA</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ AI SCANNER ============ -->
+<section class="band" id="scanner"><div class="section-signal" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="eyebrow reveal">AI MODULE</div>
+    <h2 class="sec-title reveal">C.I.D.A AI scanner</h2>
+    <p class="sec-lead reveal">Real-time chemical classification engine.</p>
+
+    <div class="glass reveal" style="margin-top:20px">
+      <div class="scan-grid">
+        <!-- inputs -->
+        <div>
+          <label class="lbl" for="prod-select">PRODUCT NAME</label>
+          <input class="field" id="prod-select" type="text" list="prod-list" autocomplete="off" value="Shampoo" placeholder="Type any product name">
+          <datalist id="prod-list"></datalist>
+
+          <label class="lbl" for="ph-input">pH VALUE (0 – 14)</label>
+          <input class="field" id="ph-input" type="number" min="0" max="14" step="0.1" value="5.5">
+          <input type="range" id="ph-range" min="0" max="14" step="0.1" value="5.5" aria-label="pH slider">
+          <div class="err" id="ph-error">⚠️ Please enter a pH value between 0 and 14.</div>
+
+          <div class="btn-row"><button class="btn solid" id="analyze">ANALYZE WITH C.I.D.A</button></div>
+
+          <div class="live-scale">
+            <div id="marker" style="left:39.3%"></div>
+            <div class="bar"></div>
+            <div class="scale-nums"><span>0</span><span>7</span><span>14</span></div>
+          </div>
+          <div class="readouts">
+            <div class="readout"><div class="k">CURRENT pH</div><div class="v" id="live-ph">5.5</div></div>
+            <div class="readout"><div class="k">STATUS</div><div class="v" id="live-status">ACIDIC</div></div>
+          </div>
+        </div>
+
+        <!-- results -->
+        <div>
+          <div id="processing"><span class="spinner"></span> C.I.D.A AI PROCESSING…</div>
+          <div class="flow">
+            <div class="node" id="n1"><div class="k">01 · PRODUCT NAME</div><div class="v" data-v>—</div></div>
+            <div class="link" id="l1"></div>
+            <div class="node" id="n2"><div class="k">02 · pH VALUE</div><div class="v" data-v>—</div></div>
+            <div class="link" id="l2"></div>
+            <div class="node" id="n3"><div class="k">03 · AI CLASSIFICATION</div><div class="v" data-v>—</div></div>
+            <div class="link" id="l3"></div>
+            <div class="node" id="n4"><div class="k">04 · SKIN RECOMMENDATION</div><div class="v" data-v>—</div></div>
+            <div class="link" id="l4"></div>
+            <div class="node" id="n5"><div class="k">05 · SAFETY MESSAGE</div><div class="v" data-v>—</div></div>
+          </div>
+          <div class="alert" id="high-alert">⚠️ <b>High pH alert.</b> Frequent use may contribute to dryness or irritation.</div>
+        </div>
+      </div>
+
+      <div class="vision-panel">
+        <div class="tag">C.I.D.A VISION · BETA</div>
+        <h3 style="margin:10px 0 4px;font-size:1.05rem">Upload image for local pH observation</h3>
+        <p style="color:var(--text-dim);font-size:.85rem;max-width:60ch;margin:0 0 16px">Upload a JPG, JPEG, PNG or WebP image. C.I.D.A processes it locally in your browser, samples the selected colour and finds the closest match on the same 0–14 pH colour scale. For best results, include a clear pH strip or colour chart.</p>
+
+        <div class="vision-grid">
+          <div>
+            <input type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" id="photo-input" hidden aria-label="Upload an image to analyse">
+            <div class="btn-row" style="margin-top:0">
+              <button class="btn solid" id="photo-btn" type="button">📷 UPLOAD PHOTO</button>
+              <button class="btn" id="photo-clear" type="button" style="display:none">✕ REMOVE</button>
+            </div>
+            <div class="photo-stage" id="photo-stage" style="display:none">
+              <canvas id="photo-canvas"></canvas>
+              <div class="marker-ring" id="marker-ring"></div>
+            </div>
+            <p class="photo-hint" id="photo-hint" style="display:none">Drag the ring onto the colour you want to read, then press Analyze.</p>
+            <div class="btn-row" id="photo-analyze-row" style="display:none"><button class="btn solid" id="photo-analyze" type="button">ANALYZE PHOTO</button></div>
+          </div>
+          <div>
+            <div class="vision-result">
+              <div class="k">ANALYSIS</div>
+              <div class="swatch-row"><span class="swatch-big" id="sampled-swatch"></span><span id="sampled-rgb">Detected colour: —</span></div>
+              <div class="k" style="margin-top:14px">ESTIMATED pH</div>
+              <div class="v" id="sampled-ph">—</div>
+              <div class="k" style="margin-top:14px">NATURE</div>
+              <div class="v" id="sampled-nature" style="font-size:1.15rem">—</div>
+              <div class="k" style="margin-top:14px">MATCH QUALITY</div>
+              <div class="v" id="sampled-confidence" style="font-size:1.15rem">—</div>
+              <div class="k" style="margin-top:14px">EVALUATION</div>
+              <p id="sampled-evaluation" style="color:var(--text-dim);font-size:.82rem;margin:6px 0 0">Upload an image and analyse a clear sample colour.</p>
+              <p style="color:var(--text-dim);font-size:.72rem;margin-top:12px">Local colour matching only — not a trained neural network or laboratory measurement. Confirm important readings with a real pH chart/test.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="example-panel">
+        <div class="tag">WORKED EXAMPLE</div>
+        <dl>
+          <dt>PRODUCT</dt><dd>Shampoo</dd>
+          <dt>pH</dt><dd>5.5</dd>
+          <dt>AI RESULT</dt><dd style="color:var(--red)">Acidic</dd>
+          <dt>SUITABLE SKIN</dt><dd>Dry, sensitive and normal skin</dd>
+          <dt>SAFETY</dt><dd style="color:var(--green)">Good for daily use.</dd>
+        </dl>
+      </div>
+
+      <p class="disclaimer">C.I.D.A is an educational project and its recommendations are based on simplified pH rules. Actual product suitability depends on the complete formulation and individual skin conditions.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ HOW C.I.D.A THINKS ============ -->
+<section class="band"><div class="section-signal" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="eyebrow reveal">AI MODULE · LOGIC</div>
+    <h2 class="sec-title reveal">How C.I.D.A thinks</h2>
+    <div class="think reveal" style="margin-top:20px">
+      <div class="tnode">PRODUCT</div><div class="tarrow">↓</div>
+      <div class="tnode">pH INPUT</div><div class="tarrow">↓</div>
+      <div class="tnode">COMPARE WITH pH 7</div><div class="tarrow">↓</div>
+      <div class="tnode">ACIDIC / NEUTRAL / BASIC</div><div class="tarrow">↓</div>
+      <div class="tnode">COMPARE WITH SKIN RANGES</div><div class="tarrow">↓</div>
+      <div class="tnode">RECOMMENDATION</div><div class="tarrow">↓</div>
+      <div class="tnode">SAFETY MESSAGE</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MATHEMATICS ============ -->
+<section class="band" id="maths"><div class="section-signal" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="eyebrow reveal">MATHEMATICS LAB</div>
+    <h2 class="sec-title reveal">Mathematics lab</h2>
+    <p class="sec-lead reveal">Every number below is calculated live from the data center table.</p>
+
+    <div class="metrics reveal" style="margin-top:20px">
+      <div class="metric"><div class="k">MEAN pH</div><div class="v" id="m-mean">—</div><div class="s" id="m-mean-s">No data yet</div></div>
+      <div class="metric"><div class="k">RANGE</div><div class="v" id="m-range">—</div><div class="s" id="m-range-s">No data yet</div></div>
+      <div class="metric"><div class="k">DOMINANT TYPE</div><div class="v" id="m-dom">—</div><div class="s" id="m-dom-s">No data yet</div></div>
+    </div>
+
+    <div class="grid-2 reveal">
+      <div class="glass"><div class="tag">MEAN</div>
+        <div class="working" id="work-mean" style="margin-top:12px">Enter pH values to see the working.</div></div>
+      <div class="glass"><div class="tag">RANGE</div>
+        <div class="working" id="work-range" style="margin-top:12px">Enter pH values to see the working.</div></div>
+    </div>
+
+    <div class="grid-2 reveal" style="margin-top:18px">
+      <div class="glass">
+        <div class="tag">pH BY PRODUCT</div>
+        <p style="color:var(--text-dim);font-size:.82rem;margin:10px 0 0">Type a pH value for any product here — the bars, the data table above and the calculations all update together.</p>
+        <div class="quick-entry" id="quick-entry"></div>
+        <div class="chart-box"><canvas id="bar" height="320"></canvas></div>
+      </div>
+      <div class="glass">
+        <div class="tag">NATURE SHARE</div>
+        <div class="chart-box" style="margin-top:14px"><canvas id="donut" height="320"></canvas></div>
+        <div class="legend">
+          <span><i style="background:#ff5f6d"></i><span id="lg-acid">Acidic 0%</span></span>
+          <span><i style="background:#34e0a1"></i><span id="lg-neut">Neutral 0%</span></span>
+          <span><i style="background:#9b6bff"></i><span id="lg-base">Basic 0%</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ EXPECTED RESULTS ============ -->
+<section class="band" id="results"><div class="section-signal" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="glass reveal">
+      <div class="eyebrow">EXPECTED OUTCOME</div>
+      <h2 class="sec-title">Expected results</h2>
+      <div class="table-scroll" style="margin-top:14px">
+        <table class="data">
+          <thead><tr><th>PRODUCT</th><th>EXPECTED NATURE</th></tr></thead>
+          <tbody>
+            <tr><td>Shampoo</td><td><span class="badge acid">SLIGHTLY ACIDIC</span></td></tr>
+            <tr><td>Face wash</td><td><span class="badge acid">SLIGHTLY ACIDIC</span></td></tr>
+            <tr><td>Moisturizing cream</td><td><span class="badge neut">NEAR NEUTRAL</span></td></tr>
+            <tr><td>Hand wash</td><td><span class="badge base">MILDLY BASIC</span></td></tr>
+            <tr><td>Soap</td><td><span class="badge base">BASIC</span></td></tr>
+            <tr><td>Dishwashing liquid</td><td><span class="badge base">BASIC</span></td></tr>
+            <tr><td>Detergent</td><td><span class="badge base">STRONGLY BASIC</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SOCIAL SCIENCE ============ -->
+<section class="band" id="social"><div class="section-signal" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="eyebrow reveal">SOCIAL SCIENCE</div>
+    <h2 class="sec-title reveal">Social impact</h2>
+    <div class="grid-3 reveal" style="margin-top:20px">
+      <div class="glass"><h3 style="font-size:1.05rem">Consumer awareness</h3>
+        <p class="q">Why do companies advertise “pH balanced” products?</p>
+        <p class="q">Why should consumers read labels before buying toiletries?</p></div>
+      <div class="glass"><h3 style="font-size:1.05rem">Health impact</h3>
+        <p style="color:var(--text-dim);font-size:.92rem">High-pH products may contribute to skin irritation, while products closer to skin pH are generally more comfortable for regular use.</p></div>
+      <div class="glass"><h3 style="font-size:1.05rem">Environmental impact</h3>
+        <p style="color:var(--text-dim);font-size:.92rem">Detergents can enter rivers through wastewater, and highly alkaline products may negatively affect aquatic environments.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SDG ============ -->
+<section class="band" id="sdg"><div class="section-signal" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="glass reveal" style="text-align:center;border-color:rgba(52,224,161,.4)">
+      <div class="eyebrow" style="color:var(--green)">SUSTAINABLE DEVELOPMENT</div>
+      <h2 class="sec-title">Sustainable development</h2>
+      <div class="sdg-ring"><span>🌍</span></div>
+      <div class="sdg-pills">
+        <span class="pill">💧 Clean water</span><span class="pill">🌍 Environmental responsibility</span>
+        <span class="pill">❤️ Good health</span><span class="pill">♻️ Responsible consumption</span>
+      </div>
+      <p class="sec-lead" style="margin:0 auto">Consumers should choose eco-friendly products, use chemicals responsibly and help reduce environmental pollution.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CONCLUSION + STUDENT ID ============ -->
+<section class="band"><div class="section-signal" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="glass reveal" style="text-align:center">
+      <div class="eyebrow">C.I.D.A v1.0</div>
+      <h2 class="sec-title">Project complete</h2>
+      <p class="sec-lead" style="margin:0 auto">The project showed that common toiletries have different pH values. Products with a pH close to human skin are generally safer and more comfortable for daily use. Using AI, students can quickly classify products as acidic, neutral or basic and provide useful recommendations. This project demonstrates how Science, Mathematics, Artificial Intelligence and Social Science can work together to solve real-life problems.</p>
+      <div class="complete"><span class="dot"></span>C.I.D.A ANALYSIS COMPLETE ✓</div>
+    </div>
+
+    <div class="glass reveal" style="margin-top:20px">
+      <div class="tag">STUDENT ID</div>
+      <div class="id-grid" style="margin-top:14px">
+        <div class="id-field"><div class="k">STUDENT NAME</div><input class="idfield" type="text" placeholder="Your name"></div>
+        <div class="id-field"><div class="k">CLASS</div><input class="idfield" type="text" placeholder="7"></div>
+        <div class="id-field"><div class="k">SECTION</div><input class="idfield" type="text" placeholder="A"></div>
+        <div class="id-field"><div class="k">ROLL NUMBER</div><input class="idfield" type="text" placeholder="00"></div>
+        <div class="id-field" style="grid-column:span 2"><div class="k">SCHOOL NAME</div><input class="idfield" type="text" placeholder="School name"></div>
+      </div>
+      <div class="btn-row" style="justify-content:center">
+        <button class="btn solid" id="submit-id" type="button">SUBMIT</button>
+      </div>
+      <div class="complete" id="submit-confirm" style="display:none;margin:18px auto 0;justify-content:center"><span class="dot"></span>DETAILS SUBMITTED ✓</div>
+    </div>
+  </div>
+</section>
+
+<footer class="foot">
+  C.I.D.A LABS · CHEMICAL INDICATOR &amp; DERMAL ADVISOR · GRADE 7 STEM + AI PROJECT<br>
+  CLIVE · ISHAN · DHANWIN · AARUSH
+</footer>
+
+<script>
+/* ============================================================
+   C.I.D.A — JavaScript
+   Everything is written in small, clearly named functions.
+   ============================================================ */
+
+/* ---------- 1. THE SEVEN PRODUCTS ---------- */
+// Each product has a code (A-G), an emoji icon, an observation note and a pH value.
+// "category" is the original example category (Shampoo, Soap, etc.) -- it is
+// kept separately from "name" so a typed brand name can fall back to it.
+const products = [
+  {code:"A", category:"Shampoo",         name:"Shampoo",          icon:"🧴", obs:"", ph:null, sample:5.5},
+  {code:"B", category:"Face Wash",       name:"Face Wash",        icon:"🫧", obs:"", ph:null, sample:5.5},
+  {code:"C", category:"Soap",            name:"Soap",             icon:"🧼", obs:"", ph:null, sample:9.5},
+  {code:"D", category:"Handwash",        name:"Handwash",         icon:"🧴", obs:"", ph:null, sample:8.0},
+  {code:"E", category:"Cream",           name:"Cream",            icon:"🧴", obs:"", ph:null, sample:7.0},
+  {code:"F", category:"Dishwash Liquid", name:"Dishwash Liquid",  icon:"🍽️", obs:"", ph:null, sample:9.0},
+  {code:"G", category:"Detergent",       name:"Detergent",        icon:"🧺", obs:"", ph:null, sample:11.0}
+];
+
+// The skin types and the pH range that suits each one.
+const skinTypes = [
+  {name:"Dry",       min:5.0, max:6.0},
+  {name:"Sensitive", min:5.0, max:6.0},
+  {name:"Normal",    min:5.0, max:6.5},
+  {name:"Oily",      min:4.5, max:6.0}
+];
+
+const $  = (sel) => document.querySelector(sel);
+const $$ = (sel) => document.querySelectorAll(sel);
+
+// The two chart canvases. These are declared early because the theme
+// function redraws the charts as soon as the page starts.
+const barCanvas   = document.getElementById("bar");
+const donutCanvas = document.getElementById("donut");
+let barGrow = 0;                 // used for the growing animation
+
+/* ---------- 2. THE MAIN AI RULE ---------- */
+// This is the rule the whole project is built on.
+function classify(ph){
+  if(ph < 7) return "Acidic";
+  if(ph === 7) return "Neutral";
+  return "Basic";
+}
+function natureClass(nature){
+  if(nature === "Acidic")  return "acid";
+  if(nature === "Neutral") return "neut";
+  return "base";
+}
+function natureColour(nature){
+  if(nature === "Acidic")  return "#ff5f6d";
+  if(nature === "Neutral") return "#34e0a1";
+  return "#9b6bff";
+}
+
+/* ---------- 3. THEME SWITCH (saved in localStorage) ---------- */
+const themeBtn = $("#theme");
+function applyTheme(mode){
+  document.documentElement.setAttribute("data-theme", mode);
+  themeBtn.textContent = (mode === "dark") ? "🌙" : "☀️";
+  try{ localStorage.setItem("cida-theme", mode); }catch(e){}
+  drawBar(); drawDonut();            // charts need redrawing with new colours
+}
+// Read the saved theme. If localStorage is blocked, just use dark.
+let savedTheme = "dark";
+try{ savedTheme = localStorage.getItem("cida-theme") || "dark"; }catch(e){ savedTheme = "dark"; }
+applyTheme(savedTheme);
+themeBtn.addEventListener("click", () => {
+  const now = document.documentElement.getAttribute("data-theme");
+  applyTheme(now === "dark" ? "light" : "dark");
+});
+
+/* ---------- 4. NAVIGATION ---------- */
+const links = $("#links"), burger = $("#burger");
+burger.addEventListener("click", () => {
+  const open = links.classList.toggle("open");
+  burger.setAttribute("aria-expanded", open ? "true" : "false");
+});
+links.querySelectorAll("a").forEach(a => {
+  a.addEventListener("click", () => { links.classList.remove("open"); });
+});
+// The two hero buttons scroll to their section.
+$$("[data-go]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const target = document.querySelector(btn.getAttribute("data-go"));
+    if(target) target.scrollIntoView({behavior:"smooth"});
+  });
+});
+// Highlight the nav link of the section you are looking at.
+const navSpy = new IntersectionObserver(entries => {
+  entries.forEach(en => {
+    if(en.isIntersecting){
+      $$(".links a").forEach(a => a.classList.remove("on"));
+      const active = document.querySelector('.links a[href="#'+en.target.id+'"]');
+      if(active) active.classList.add("on");
+    }
+  });
+},{rootMargin:"-45% 0px -50% 0px"});
+$$("section[id]").forEach(s => navSpy.observe(s));
+
+/* ---------- 5. FADE-IN ON SCROLL ---------- */
+// Safety net: if anything ever goes wrong, show all the content anyway
+// after 2 seconds so the page is never left blank.
+setTimeout(() => { $$(".reveal").forEach(el => el.classList.add("in")); }, 2000);
+const revealer = new IntersectionObserver(entries => {
+  entries.forEach(en => { if(en.isIntersecting){ en.target.classList.add("in"); revealer.unobserve(en.target); } });
+},{threshold:.12});
+$$(".reveal").forEach(el => revealer.observe(el));
+
+/* ---------- 6. COUNTING NUMBERS IN THE STATS ---------- */
+const counter = new IntersectionObserver(entries => {
+  entries.forEach(en => {
+    if(!en.isIntersecting) return;
+    const el = en.target, end = Number(el.dataset.count);
+    let n = 0;
+    const timer = setInterval(() => {
+      n++;
+      el.textContent = String(n).padStart(2,"0");
+      if(n >= end) clearInterval(timer);
+    }, 120);
+    counter.unobserve(el);
+  });
+},{threshold:.5});
+$$("[data-count]").forEach(el => counter.observe(el));
+
+/* ---------- 7. FLOATING PARTICLES + IMMERSIVE FIELD ---------- */
+for(let i = 0; i < 22; i++){
+  const s = document.createElement("div");
+  s.className = "spark";
+  s.style.left = Math.random()*100 + "vw";
+  s.style.top  = (100 + Math.random()*40) + "vh";
+  s.style.animationDuration = (16 + Math.random()*20) + "s";
+  s.style.animationDelay = (-Math.random()*25) + "s";
+  document.body.appendChild(s);
+}
+
+const particleField = $("#particle-field");
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+if(!reduceMotion && particleField){
+  for(let i=0;i<34;i++){
+    const p=document.createElement("span");
+    p.className="cida-particle";
+    p.style.left=(Math.random()*100)+"%";
+    p.style.animationDuration=(12+Math.random()*20)+"s";
+    p.style.animationDelay=(-Math.random()*28)+"s";
+    p.style.opacity=(.12+Math.random()*.32).toFixed(2);
+    particleField.appendChild(p);
+  }
+}
+
+
+/* ---------- CELESTIAL THEME TRANSITION ---------- */
+(function(){
+  const overlay=document.getElementById("celestial-transition");
+  if(!overlay) return;
+
+  let lastTheme=document.documentElement.classList.contains("light");
+  let transitionTimer=null;
+
+  function playCelestial(toLight){
+    if(reduceMotion) return;
+    clearTimeout(transitionTimer);
+    overlay.classList.toggle("light-transition",toLight);
+    overlay.classList.add("active");
+    transitionTimer=setTimeout(()=>{
+      overlay.classList.remove("active","light-transition");
+    },2350);
+  }
+
+  const observer=new MutationObserver(()=>{
+    const now=document.documentElement.classList.contains("light");
+    if(now!==lastTheme){
+      playCelestial(now);
+      lastTheme=now;
+    }
+  });
+  observer.observe(document.documentElement,{attributes:true,attributeFilter:["class"]});
+})();
+
+/* ---------- 7B. POINTER-BASED AMBIENCE ---------- */
+const mouseGlow=$("#mouse-glow");
+if(!reduceMotion && mouseGlow && window.matchMedia("(pointer:fine)").matches){
+  let gx=window.innerWidth/2, gy=window.innerHeight/2, tx=gx, ty=gy;
+  window.addEventListener("pointermove",e=>{
+    tx=e.clientX; ty=e.clientY;
+  },{passive:true});
+  function animateGlow(){
+    gx += (tx-gx)*.11; gy += (ty-gy)*.11;
+    mouseGlow.style.transform=`translate3d(${gx}px,${gy}px,0)`;
+    requestAnimationFrame(animateGlow);
+  }
+  requestAnimationFrame(animateGlow);
+
+  $$(".poster,.glass,.stat,.metric,.prod,.obj,.acc,.node,.ph-card,.vision-result").forEach(card=>{
+    card.addEventListener("pointermove",e=>{
+      const r=card.getBoundingClientRect();
+      const x=(e.clientX-r.left)/r.width-.5;
+      const y=(e.clientY-r.top)/r.height-.5;
+      card.style.transform=`perspective(900px) rotateX(${(-y*2.2).toFixed(2)}deg) rotateY(${(x*2.2).toFixed(2)}deg) translateY(-4px)`;
+    });
+    card.addEventListener("pointerleave",()=>{
+      card.style.transform="";
+    });
+  });
+}
+
+/* ---------- 7C. DYNAMIC SECTION ATMOSPHERE ---------- */
+if(!reduceMotion){
+  $$(".band").forEach((section,i)=>{
+    section.style.setProperty("--section-depth",String(i));
+  });
+}
+
+/* ---------- 7D. SCROLL DEPTH ---------- */
+if(!reduceMotion){
+  let scrollTick=false;
+  window.addEventListener("scroll",()=>{
+    if(scrollTick) return;
+    scrollTick=true;
+    requestAnimationFrame(()=>{
+      const y=window.scrollY;
+      const a=document.getElementById("blob-a"), b=document.getElementById("blob-b");
+      if(a) a.style.marginTop=(y*.018)+"px";
+      if(b) b.style.marginTop=(-y*.012)+"px";
+      scrollTick=false;
+    });
+  },{passive:true});
+}
+
+/* ---------- 8. PRODUCT CARDS ---------- */
+$("#product-cards").innerHTML = products.map(p => `
+  <div class="prod">
+    <div class="ico">${p.icon}</div>
+    <div class="nm">${p.name}</div>
+    <div class="code">SAMPLE ${p.code}</div>
+  </div>`).join("");
+
+/* ---------- 9. ACCORDION ---------- */
+$$(".acc-head").forEach(head => {
+  head.addEventListener("click", () => {
+    const acc  = head.parentElement;
+    const body = head.nextElementSibling;
+    const isOpen = acc.classList.toggle("open");
+    body.style.maxHeight = isOpen ? (body.scrollHeight + "px") : "0px";
+  });
+});
+
+/* ---------- 10. THE OBSERVATION TABLE ---------- */
+const obsBody = $("#obs-body");
+const quickEntry = $("#quick-entry");
+
+// This one function is the single place a pH value gets changed.
+// It is called from the big table AND from the quick-entry boxes next to
+// the bar chart, so typing in either place keeps both of them, the
+// badges, and every calculation in sync with each other.
+function setProductPh(i, rawValue){
+  // C.I.D.A Mathematics Input Fix
+  // Keep the raw text while the user is editing. Only valid completed values
+  // enter the shared data model; blank/partial text is allowed temporarily.
+  const raw = String(rawValue ?? "").trim();
+  const value = raw === "" ? NaN : Number(raw);
+  const valid = Number.isFinite(value) && value >= 0 && value <= 14;
+
+  products[i].ph = valid ? Math.round(value * 10) / 10 : null;
+
+  const tableInput = obsBody.querySelector('input.ph[data-i="'+i+'"]');
+  const quickInput  = quickEntry.querySelector('.quick-ph[data-i="'+i+'"]');
+  [tableInput, quickInput].forEach(inp => {
+    if(!inp) return;
+    // Never rewrite the active field. This preserves cursor position,
+    // backspace/delete, Ctrl+A, paste and decimal editing.
+    if(document.activeElement !== inp) inp.value = valid ? products[i].ph : "";
+    inp.setCustomValidity((raw !== "" && !valid) ? "Enter a number from 0 to 14." : "");
+    inp.style.borderColor = (raw !== "" && !valid) ? "var(--red)" : "";
+  });
+
+  refreshEverything();
+}
+
+function normaliseTypedPh(value){
+  const raw = String(value ?? "").trim();
+  if(raw === "") return "";
+  const n = Number(raw);
+  return Number.isFinite(n) ? Math.max(0, Math.min(14, n)) : "";
+}
+
+function buildQuickEntry(){
+  quickEntry.innerHTML = products.map((p,i) => `
+    <div class="qe">
+      <div class="nm">${p.name}</div>
+      <input type="text" inputmode="decimal" autocomplete="off" spellcheck="false"
+        data-i="${i}" class="quick-ph" placeholder="pH" aria-label="pH for ${p.name}"
+        value="${p.ph===null?"":p.ph}">
+    </div>`).join("");
+
+  // C.I.D.A Mathematics Input Fix
+  // These are real HTML inputs, separate from the canvas. No canvas handler,
+  // global keyboard handler or redraw is allowed to take focus from them.
+  quickEntry.querySelectorAll(".quick-ph").forEach(input => {
+    input.addEventListener("input", () => {
+      const i = Number(input.dataset.i);
+      const raw = input.value.replace(/[^\d.,-]/g, "").replace(/,/g, ".");
+      if(raw !== input.value) input.value = raw;
+      setProductPh(i, raw);
+    });
+    input.addEventListener("blur", () => {
+      const i = Number(input.dataset.i);
+      const raw = input.value.trim();
+      if(raw === "") {
+        products[i].ph = null;
+        input.setCustomValidity("");
+        input.style.borderColor = "";
+        refreshEverything();
+        return;
+      }
+      const n = Number(raw);
+      if(Number.isFinite(n) && n >= 0 && n <= 14) {
+        input.value = (Math.round(n * 10) / 10).toString();
+        setProductPh(i, input.value);
+      } else {
+        input.setCustomValidity("Enter a number from 0 to 14.");
+        input.style.borderColor = "var(--red)";
+      }
+    });
+  });
+}
+
+// Typing a real brand name into the "Product" column. Every place that
+// shows a product's name -- the bar chart, the quick-entry labels next to
+// it, the AI Scanner's suggestion list, the mean/range working -- reads
+// straight from products[i].name, so updating it here keeps everything
+// in sync automatically.
+function setProductName(i, value){
+  products[i].name = value.trim() === "" ? products[i].category : value;
+  buildQuickEntry();                                                   // refresh the label beside the bar chart
+  $("#prod-list").innerHTML = products.map(p => `<option value="${p.name}">`).join("");   // scanner suggestions
+  refreshEverything();                                                 // chart labels, mean/range text, badges
+}
+
+function buildTable(){
+  obsBody.innerHTML = products.map((p,i) => `
+    <tr>
+      <td>
+        <input class="cell name-input" data-i="${i}" type="text" value="${p.name}" placeholder="${p.category}" aria-label="Product name for sample ${p.code} — type a real brand name if you like">
+        <span class="code" style="font-family:ui-monospace,monospace;font-size:.6rem;color:var(--cyan);display:block;margin-top:4px">SAMPLE ${p.code}</span>
+      </td>
+      <td><input class="cell obs" data-i="${i}" type="text" placeholder="e.g. turned green" value="${p.obs}"></td>
+      <td><input class="cell ph" data-i="${i}" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="—" value="${p.ph===null?"":p.ph}"></td>
+      <td><span class="badge none" id="nat-${i}">NOT TESTED</span></td>
+    </tr>`).join("");
+
+  obsBody.querySelectorAll("input.name-input").forEach(input => {
+    input.addEventListener("input", () => setProductName(Number(input.dataset.i), input.value));
+  });
+
+  // C.I.D.A Mathematics Input Fix
+  obsBody.querySelectorAll("input.ph").forEach(input => {
+    input.addEventListener("input", () => {
+      const i = Number(input.dataset.i);
+      const raw = input.value.replace(/[^\d.,-]/g, "").replace(/,/g, ".");
+      if(raw !== input.value) input.value = raw;
+      setProductPh(i, raw);
+    });
+    input.addEventListener("blur", () => {
+      const i = Number(input.dataset.i);
+      const raw = input.value.trim();
+      if(raw === "") return;
+      const n = Number(raw);
+      if(Number.isFinite(n) && n >= 0 && n <= 14){
+        input.value = (Math.round(n * 10) / 10).toString();
+        setProductPh(i, input.value);
+      }else{
+        input.setCustomValidity("Enter a number from 0 to 14.");
+        input.style.borderColor = "var(--red)";
+      }
+    });
+  });
+  obsBody.querySelectorAll("input.obs").forEach(input => {
+    input.addEventListener("input", () => { products[Number(input.dataset.i)].obs = input.value; });
+  });
+  buildQuickEntry();
+  refreshEverything();
+}
+
+function updateBadges(){
+  products.forEach((p,i) => {
+    const badge = $("#nat-" + i);
+    if(p.ph === null){ badge.className = "badge none"; badge.textContent = "NOT TESTED"; return; }
+    const nature = classify(p.ph);
+    badge.className = "badge " + natureClass(nature);
+    badge.textContent = nature.toUpperCase();
+  });
+}
+
+/* ---------- 11. TABLE BUTTONS ---------- */
+$("#load-sample").addEventListener("click", () => {
+  products.forEach(p => { p.ph = p.sample; });
+  obsBody.querySelectorAll("input.ph").forEach(inp => { inp.value = products[Number(inp.dataset.i)].ph; inp.style.borderColor=""; });
+  buildQuickEntry();
+  refreshEverything();
+});
+$("#clear-table").addEventListener("click", () => {
+  products.forEach(p => { p.ph = null; });
+  obsBody.querySelectorAll("input.ph").forEach(inp => { inp.value = ""; inp.style.borderColor=""; });
+  buildQuickEntry();
+  refreshEverything();
+});
+$("#export-csv").addEventListener("click", () => {
+  // Build the CSV text line by line, then download it using a Blob.
+  let csv = "Product,Sample,Indicator Observation,Estimated pH,Nature\n";
+  products.forEach(p => {
+    const nature = (p.ph === null) ? "Not tested" : classify(p.ph);
+    const ph     = (p.ph === null) ? "" : p.ph;
+    csv += `"${p.name}","${p.code}","${p.obs.replace(/"/g,"'")}","${ph}","${nature}"\n`;
+  });
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href = url; a.download = "CIDA_observation_data.csv";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+/* ---------- 12. MATHEMATICS ---------- */
+function testedProducts(){ return products.filter(p => p.ph !== null); }
+
+function updateMaths(){
+  const tested = testedProducts();
+
+  if(tested.length === 0){
+    $("#m-mean").textContent = "—";  $("#m-mean-s").textContent = "No data yet";
+    $("#m-range").textContent = "—"; $("#m-range-s").textContent = "No data yet";
+    $("#m-dom").textContent = "—";   $("#m-dom-s").textContent = "No data yet";
+    $("#work-mean").textContent  = "Enter pH values to see the working.";
+    $("#work-range").textContent = "Enter pH values to see the working.";
+    $("#lg-acid").textContent = "Acidic 0%"; $("#lg-neut").textContent = "Neutral 0%"; $("#lg-base").textContent = "Basic 0%";
+    return;
+  }
+
+  // Mean = sum of pH values divided by how many products were tested.
+  const sum  = tested.reduce((total,p) => total + p.ph, 0);
+  const mean = sum / tested.length;
+  $("#m-mean").textContent   = mean.toFixed(2);
+  $("#m-mean-s").textContent = tested.length + " product(s) tested";
+  $("#work-mean").textContent =
+    "Mean pH = Sum of pH values ÷ Number of products\n\n" +
+    "Sum    = " + tested.map(p => p.ph).join(" + ") + "\n" +
+    "       = " + sum.toFixed(1) + "\n" +
+    "Count  = " + tested.length + "\n\n" +
+    "Mean   = " + sum.toFixed(1) + " ÷ " + tested.length + " = " + mean.toFixed(2);
+
+  // Range = highest pH minus lowest pH.
+  let highest = tested[0], lowest = tested[0];
+  tested.forEach(p => { if(p.ph > highest.ph) highest = p; if(p.ph < lowest.ph) lowest = p; });
+  const range = highest.ph - lowest.ph;
+  $("#m-range").textContent   = range.toFixed(1);
+  $("#m-range-s").textContent = lowest.name + " → " + highest.name;
+  $("#work-range").textContent =
+    "Range = Highest pH − Lowest pH\n\n" +
+    "Highest = " + highest.ph + "  (" + highest.name + ")\n" +
+    "Lowest  = " + lowest.ph  + "  (" + lowest.name  + ")\n\n" +
+    "Range   = " + highest.ph + " − " + lowest.ph + " = " + range.toFixed(1);
+
+  // Count how many are acidic, neutral and basic.
+  const counts = {Acidic:0, Neutral:0, Basic:0};
+  tested.forEach(p => { counts[classify(p.ph)]++; });
+  const total = tested.length;
+  const pct = (n) => Math.round(n / total * 100);
+  $("#lg-acid").textContent = "Acidic "  + pct(counts.Acidic)  + "% (" + counts.Acidic  + ")";
+  $("#lg-neut").textContent = "Neutral " + pct(counts.Neutral) + "% (" + counts.Neutral + ")";
+  $("#lg-base").textContent = "Basic "   + pct(counts.Basic)   + "% (" + counts.Basic   + ")";
+
+  // The dominant type is simply the one with the biggest count.
+  let dominant = "Acidic";
+  if(counts.Neutral > counts[dominant]) dominant = "Neutral";
+  if(counts.Basic   > counts[dominant]) dominant = "Basic";
+  $("#m-dom").textContent   = dominant;
+  $("#m-dom").style.color   = natureColour(dominant);
+  $("#m-dom-s").textContent = counts[dominant] + " of " + total + " products";
+}
+
+/* ---------- 13. BAR CHART (canvas) ---------- */
+function setupCanvas(canvas, height){
+  if(!canvas || !canvas.parentElement) return null;   // nothing to draw on
+  const ratio = window.devicePixelRatio || 1;
+  const width = canvas.parentElement.clientWidth;
+  canvas.width  = width * ratio;
+  canvas.height = height * ratio;
+  canvas.style.height = height + "px";
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(ratio,0,0,ratio,0,0);
+  ctx.clearRect(0,0,width,height);
+  return {ctx, width, height};
+}
+function themeInk(){
+  return getComputedStyle(document.documentElement).getPropertyValue("--text-dim").trim() || "#9bb3cf";
+}
+
+function drawBar(){
+  const H = 320;
+  const setup = setupCanvas(barCanvas, H);
+  if(!setup) return;
+  const ctx = setup.ctx, width = setup.width;
+  const left = 34, bottom = H - 52, top = 16;
+  const plotH = bottom - top, plotW = width - left - 10;
+  const ink = themeInk();
+
+  // y-axis numbers 0 to 14
+  ctx.font = "10px ui-monospace, monospace"; ctx.fillStyle = ink; ctx.textAlign = "right";
+  for(let v = 0; v <= 14; v += 2){
+    const y = bottom - (v/14)*plotH;
+    ctx.fillText(String(v), left - 8, y + 3);
+    ctx.globalAlpha = .13; ctx.strokeStyle = ink; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(left + plotW, y); ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+
+  // dashed neutral line at pH 7
+  const y7 = bottom - (7/14)*plotH;
+  ctx.setLineDash([6,5]); ctx.strokeStyle = "#34e0a1"; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(left,y7); ctx.lineTo(left+plotW,y7); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = "#34e0a1"; ctx.textAlign = "left"; ctx.font = "9px ui-monospace, monospace";
+  ctx.fillText("pH 7 · NEUTRAL", left + 4, y7 - 5);
+
+  // the bars
+  const slot = plotW / products.length;
+  const barW = Math.min(38, slot * 0.55);
+  products.forEach((p,i) => {
+    const cx = left + slot*i + slot/2;
+    ctx.textAlign = "center"; ctx.fillStyle = ink; ctx.font = "9px ui-monospace, monospace";
+    const short = p.name.split(" ")[0].toUpperCase().slice(0,9);
+    ctx.fillText(short, cx, bottom + 16);
+    if(p.ph === null){
+      ctx.fillStyle = ink; ctx.globalAlpha = .35;
+      ctx.fillRect(cx - barW/2, bottom - 3, barW, 3); ctx.globalAlpha = 1;
+      return;
+    }
+    const full = (p.ph/14) * plotH;
+    const h = full * barGrow;
+    const colour = natureColour(classify(p.ph));
+    const grad = ctx.createLinearGradient(0, bottom - h, 0, bottom);
+    grad.addColorStop(0, colour); grad.addColorStop(1, colour + "33");
+    ctx.fillStyle = grad;
+    ctx.shadowColor = colour; ctx.shadowBlur = 14;
+    roundRect(ctx, cx - barW/2, bottom - h, barW, h, 6); ctx.fill();
+    ctx.shadowBlur = 0;
+    if(barGrow > .95){
+      ctx.fillStyle = colour; ctx.font = "bold 10px ui-monospace, monospace";
+      ctx.fillText(p.ph.toFixed(1), cx, bottom - h - 6);
+    }
+  });
+}
+function roundRect(ctx,x,y,w,h,r){
+  if(h < r) r = h < 0 ? 0 : h/2;
+  ctx.beginPath();
+  ctx.moveTo(x, y+h); ctx.lineTo(x, y+r); ctx.quadraticCurveTo(x, y, x+r, y);
+  ctx.lineTo(x+w-r, y); ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+  ctx.lineTo(x+w, y+h); ctx.closePath();
+}
+
+/* ---------- 14. DONUT CHART (canvas) ---------- */
+function drawDonut(){
+  const H = 320;
+  const setup = setupCanvas(donutCanvas, H);
+  if(!setup) return;
+  const ctx = setup.ctx, width = setup.width;
+  const cx = width/2, cy = H/2, outer = Math.min(width, H)/2 - 26, inner = outer * 0.6;
+  const ink = themeInk();
+  const tested = testedProducts();
+  const counts = {Acidic:0, Neutral:0, Basic:0};
+  tested.forEach(p => { counts[classify(p.ph)]++; });
+
+  if(tested.length === 0){
+    ctx.strokeStyle = ink; ctx.globalAlpha = .3; ctx.lineWidth = outer - inner;
+    ctx.beginPath(); ctx.arc(cx, cy, (outer+inner)/2, 0, Math.PI*2); ctx.stroke(); ctx.globalAlpha = 1;
+    ctx.fillStyle = ink; ctx.textAlign = "center"; ctx.font = "12px ui-monospace, monospace";
+    ctx.fillText("NO DATA", cx, cy + 4);
+    return;
+  }
+
+  let start = -Math.PI/2;
+  [["Acidic","#ff5f6d"],["Neutral","#34e0a1"],["Basic","#9b6bff"]].forEach(([key,colour]) => {
+    const share = counts[key] / tested.length;
+    if(share === 0) return;
+    const end = start + share * Math.PI*2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, outer, start, end);
+    ctx.arc(cx, cy, inner, end, start, true);
+    ctx.closePath();
+    ctx.fillStyle = colour; ctx.shadowColor = colour; ctx.shadowBlur = 18; ctx.fill(); ctx.shadowBlur = 0;
+    // percentage label in the middle of the slice
+    const mid = (start + end)/2, r = (outer+inner)/2;
+    ctx.fillStyle = "#08131f"; ctx.font = "bold 12px ui-monospace, monospace"; ctx.textAlign = "center";
+    if(share > 0.09) ctx.fillText(Math.round(share*100) + "%", cx + Math.cos(mid)*r, cy + Math.sin(mid)*r + 4);
+    start = end;
+  });
+
+  const strong = getComputedStyle(document.documentElement).getPropertyValue("--text").trim() || "#fff";
+  ctx.fillStyle = strong; ctx.textAlign = "center";
+  ctx.font = "bold 26px 'Segoe UI', system-ui, sans-serif";
+  ctx.fillText(String(tested.length), cx, cy + 2);
+  ctx.font = "10px ui-monospace, monospace"; ctx.fillStyle = ink;
+  ctx.fillText(tested.length === 1 ? "PRODUCT" : "PRODUCTS", cx, cy + 18);
+}
+
+/* ---------- 15. REFRESH EVERYTHING ---------- */
+function refreshEverything(){
+  updateBadges();
+  updateMaths();
+  drawBar();
+  drawDonut();
+}
+window.addEventListener("resize", () => { drawBar(); drawDonut(); });
+
+/* ---------- 16. THE SCANNER INPUTS ---------- */
+// prodInput used to be a dropdown; it is now a text box so students can
+// type any real product name. The datalist still offers the 7 project
+// products as suggestions when they start typing.
+const prodInput = $("#prod-select"), phInput = $("#ph-input"), phRange = $("#ph-range");
+$("#prod-list").innerHTML = products.map(p => `<option value="${p.name}">`).join("");
+
+function readPh(){ return parseFloat(phInput.value); }
+
+function updateLive(){
+  const value = readPh();
+  const error = $("#ph-error");
+  if(isNaN(value) || value < 0 || value > 14){
+    error.classList.add("show");
+    return;                      // stop here instead of crashing
+  }
+  error.classList.remove("show");
+  const rounded = Math.round(value * 10) / 10;
+  phRange.value = rounded;
+  $("#live-ph").textContent = rounded.toFixed(1);
+  const nature = classify(rounded);
+  const status = $("#live-status");
+  status.textContent = nature.toUpperCase();
+  status.style.color = natureColour(nature);
+  $("#marker").style.left = (rounded / 14 * 100) + "%";
+}
+phInput.addEventListener("input", updateLive);
+phRange.addEventListener("input", () => { phInput.value = phRange.value; updateLive(); });
+
+/* ---------- 17. THE AI ANALYSIS ---------- */
+// Which skin types suit this pH? We check the entered value against each range.
+function suitableSkin(ph){
+  const matches = skinTypes.filter(s => ph >= s.min && ph <= s.max).map(s => s.name);
+  if(matches.length === 0) return "Not suitable for any skin types";
+  if(matches.length === 1) return matches[0] + " skin";
+  return matches.slice(0,-1).join(", ") + " and " + matches[matches.length-1] + " skin";
+}
+
+function safetyMessage(ph, nature){
+  if(ph > 8)  return "Use carefully on skin. Frequent use may cause dryness.";
+  if(nature === "Basic")   return "Use carefully on skin.";
+  if(nature === "Neutral") return "Gentle product.";
+  if(ph >= 4.5 && ph <= 6.5) return "Good for daily use.";
+  return "Quite strongly acidic — not close to skin pH.";
+}
+
+function showStage(nodeId, linkId, text, colour){
+  const node = $("#" + nodeId);
+  node.querySelector("[data-v]").textContent = text;
+  if(colour) node.querySelector("[data-v]").style.color = colour;
+  node.classList.add("show");
+  if(linkId) $("#" + linkId).classList.add("show");
+}
+
+// Pulled out into its own function (instead of living only inside the
+// button's click listener) so the photo-analysis feature further down
+// can trigger the exact same five-stage result.
+function runAnalysis(){
+  const value = readPh();
+  const error = $("#ph-error");
+  if(isNaN(value) || value < 0 || value > 14){
+    error.classList.add("show");
+    return;
+  }
+  error.classList.remove("show");
+  const ph = Math.round(value * 10) / 10;
+  const productName = (prodInput.value || "").trim() || "Sample";
+  const nature = classify(ph);
+
+  // reset the five stages
+  ["n1","n2","n3","n4","n5"].forEach(id => $("#"+id).classList.remove("show"));
+  ["l1","l2","l3","l4"].forEach(id => $("#"+id).classList.remove("show"));
+  $("#high-alert").classList.remove("show");
+
+  // show the processing message, then reveal the stages one by one
+  const proc = $("#processing");
+  proc.classList.add("show");
+  setTimeout(() => {
+    proc.classList.remove("show");
+    setTimeout(() => showStage("n1", null, productName, ""), 0);
+    setTimeout(() => showStage("n2", "l1", ph.toFixed(1), ""), 350);
+    setTimeout(() => showStage("n3", "l2", nature, natureColour(nature)), 700);
+    setTimeout(() => showStage("n4", "l3", suitableSkin(ph), ""), 1050);
+    setTimeout(() => {
+      showStage("n5", "l4", safetyMessage(ph, nature), ph > 8 ? "var(--red)" : "var(--green)");
+      if(ph > 8) $("#high-alert").classList.add("show");
+    }, 1400);
+  }, 900);
+}
+$("#analyze").addEventListener("click", runAnalysis);
+
+/* ---------- 17b. C.I.D.A VISION — read pH from a photo ---------- */
+// C.I.D.A Local Image pH Analyzer
+// This is NOT a trained AI model. It performs local nearest-colour matching
+// against the same simplified pH colour scale used by this educational page.
+
+const phStops = [
+  {ph:0,      rgb:[255, 59, 59]},
+  {ph:2.333,  rgb:[255,122, 47]},
+  {ph:4.667,  rgb:[255,210, 63]},
+  {ph:7,      rgb:[ 61,220,132]},
+  {ph:9.333, rgb:[ 47,216,255]},
+  {ph:11.667,rgb:[ 63,109,255]},
+  {ph:14,     rgb:[155,107,255]}
+];
+
+function rgbAtPh(ph){
+  for(let i=0;i<phStops.length-1;i++){
+    const a=phStops[i], b=phStops[i+1];
+    if(ph>=a.ph && ph<=b.ph){
+      const t=(ph-a.ph)/(b.ph-a.ph);
+      return [0,1,2].map(k=>a.rgb[k]+(b.rgb[k]-a.rgb[k])*t);
+    }
+  }
+  return phStops[phStops.length-1].rgb;
+}
+
+function colourDistance(r,g,b, target){
+  const dr=r-target[0], dg=g-target[1], db=b-target[2];
+  return Math.sqrt(dr*dr+dg*dg+db*db);
+}
+
+function estimatePhFromRgb(r,g,b){
+  let best=0,bestDist=Infinity;
+  for(let ph=0;ph<=14;ph+=0.1){
+    const dist=colourDistance(r,g,b,rgbAtPh(ph));
+    if(dist<bestDist){bestDist=dist;best=ph;}
+  }
+  return {ph:Math.round(best*10)/10,distance:bestDist};
+}
+
+function colourQuality(distance){
+  // Maximum RGB Euclidean distance is about 441.
+  // This is deliberately presented as a match-quality estimate, not certainty.
+  const score=Math.max(0,Math.min(100,100-(distance/441)*100));
+  return Math.round(score);
+}
+
+function imageEvaluation(ph,nature,quality){
+  if(quality < 45) return "Image colour is quite different from C.I.D.A's simplified pH scale. Try a clearer photo with the pH strip and colour chart visible.";
+  if(ph < 4.5) return `Estimated pH ${ph.toFixed(1)} is strongly acidic. The colour match suggests an acidic sample; confirm the reading with a real pH chart.`;
+  if(ph < 6.5) return `Estimated pH ${ph.toFixed(1)} is mildly acidic. This is within the broad mildly acidic region used by this educational project.`;
+  if(ph === 7) return "Estimated pH 7.0 is neutral on the simplified pH scale.";
+  if(ph <= 8) return `Estimated pH ${ph.toFixed(1)} is mildly basic. The colour match suggests a basic sample; confirm the reading with a real pH chart.`;
+  return `Estimated pH ${ph.toFixed(1)} is clearly basic. The colour match suggests a more alkaline sample; confirm the reading with a real pH chart.`;
+}
+
+const photoInput=$("#photo-input"), photoBtn=$("#photo-btn"),
+      photoClear=$("#photo-clear"), photoStage=$("#photo-stage"),
+      photoCanvas=$("#photo-canvas"), markerRing=$("#marker-ring"),
+      photoHint=$("#photo-hint"), photoAnalyzeRow=$("#photo-analyze-row"),
+      photoAnalyzeBtn=$("#photo-analyze"), sampledSwatch=$("#sampled-swatch"),
+      sampledRgb=$("#sampled-rgb"), sampledPh=$("#sampled-ph"),
+      sampledNature=$("#sampled-nature"), sampledConfidence=$("#sampled-confidence"),
+      sampledEvaluation=$("#sampled-evaluation");
+
+let markerPos={x:0.5,y:0.5};
+let loadedImageReady=false;
+
+photoBtn.addEventListener("click",()=>photoInput.click());
+
+photoInput.addEventListener("change",()=>{
+  const file=photoInput.files && photoInput.files[0];
+  if(!file) return;
+
+  const allowed=["image/jpeg","image/png","image/webp"];
+  if(!allowed.includes(file.type)){
+    photoHint.style.display="block";
+    photoHint.textContent="⚠️ Please choose a JPG, JPEG, PNG or WebP image.";
+    photoInput.value="";
+    return;
+  }
+
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img=new Image();
+    img.onload=()=>{
+      const maxSide=720;
+      const scale=Math.min(1,maxSide/Math.max(img.naturalWidth,img.naturalHeight));
+      photoCanvas.width=Math.max(1,Math.round(img.naturalWidth*scale));
+      photoCanvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
+
+      const ctx=photoCanvas.getContext("2d",{willReadFrequently:true});
+      ctx.clearRect(0,0,photoCanvas.width,photoCanvas.height);
+      ctx.drawImage(img,0,0,photoCanvas.width,photoCanvas.height);
+
+      photoStage.style.display="inline-block";
+      photoHint.style.display="block";
+      photoHint.textContent="Drag the ring onto the strip/sample colour, then press Analyze Image.";
+      photoAnalyzeRow.style.display="flex";
+      photoClear.style.display="inline-block";
+      markerPos={x:0.5,y:0.5};
+      loadedImageReady=true;
+      placeMarker();
+    };
+    img.onerror=()=>{
+      loadedImageReady=false;
+      photoHint.style.display="block";
+      photoHint.textContent="⚠️ Image could not be read. Try a clearer JPG, PNG or WebP file.";
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+photoClear.addEventListener("click",()=>{
+  photoInput.value="";
+  photoStage.style.display="none";
+  photoHint.style.display="none";
+  photoAnalyzeRow.style.display="none";
+  photoClear.style.display="none";
+  loadedImageReady=false;
+  sampledSwatch.style.background="#333";
+  sampledRgb.textContent="Detected colour: —";
+  sampledPh.textContent="—";
+  sampledNature.textContent="—";
+  sampledConfidence.textContent="—";
+  sampledEvaluation.textContent="Upload an image and analyse a clear sample colour.";
+});
+
+function placeMarker(){
+  const rect=photoCanvas.getBoundingClientRect();
+  markerRing.style.left=(markerPos.x*rect.width)+"px";
+  markerRing.style.top=(markerPos.y*rect.height)+"px";
+}
+window.addEventListener("resize",()=>{if(photoStage.style.display!=="none") placeMarker();});
+
+let dragging=false;
+function moveMarkerTo(clientX,clientY){
+  const rect=photoCanvas.getBoundingClientRect();
+  if(!rect.width||!rect.height) return;
+  markerPos={
+    x:Math.min(1,Math.max(0,(clientX-rect.left)/rect.width)),
+    y:Math.min(1,Math.max(0,(clientY-rect.top)/rect.height))
+  };
+  placeMarker();
+}
+photoStage.addEventListener("pointerdown",e=>{
+  if(e.target===photoAnalyzeBtn) return;
+  dragging=true;
+  photoStage.setPointerCapture(e.pointerId);
+  moveMarkerTo(e.clientX,e.clientY);
+});
+photoStage.addEventListener("pointermove",e=>{if(dragging)moveMarkerTo(e.clientX,e.clientY);});
+photoStage.addEventListener("pointerup",()=>{dragging=false;});
+photoStage.addEventListener("pointercancel",()=>{dragging=false;});
+
+function samplePhotoColour(){
+  if(!loadedImageReady || !photoCanvas.width || !photoCanvas.height) return null;
+  const ctx=photoCanvas.getContext("2d",{willReadFrequently:true});
+  const px=Math.round(markerPos.x*(photoCanvas.width-1));
+  const py=Math.round(markerPos.y*(photoCanvas.height-1));
+
+  // Average a compact region around the marker and reject near-white/near-black
+  // pixels that are more likely to be glare, text or the background.
+  const radius=7;
+  const x0=Math.max(0,px-radius), y0=Math.max(0,py-radius);
+  const x1=Math.min(photoCanvas.width-1,px+radius);
+  const y1=Math.min(photoCanvas.height-1,py+radius);
+  const data=ctx.getImageData(x0,y0,x1-x0+1,y1-y0+1).data;
+
+  let r=0,g=0,b=0,n=0;
+  for(let i=0;i<data.length;i+=4){
+    const rr=data[i],gg=data[i+1],bb=data[i+2];
+    const max=Math.max(rr,gg,bb), min=Math.min(rr,gg,bb);
+    if(max>248 && min>235) continue;
+    if(max<18 && min<12) continue;
+    r+=rr;g+=gg;b+=bb;n++;
+  }
+  if(n<8) return null;
+  return {r:Math.round(r/n),g:Math.round(g/n),b:Math.round(b/n)};
+}
+
+photoAnalyzeBtn.addEventListener("click",()=>{
+  const rgb=samplePhotoColour();
+  if(!rgb){
+    sampledPh.textContent="—";
+    sampledNature.textContent="—";
+    sampledConfidence.textContent="LOW";
+    sampledEvaluation.textContent="Image could not be reliably evaluated. Try a clearer photo with the pH strip and colour chart visible.";
+    return;
+  }
+
+  const match=estimatePhFromRgb(rgb.r,rgb.g,rgb.b);
+  const ph=match.ph;
+  const nature=classify(ph);
+  const quality=colourQuality(match.distance);
+
+  sampledSwatch.style.background=`rgb(${rgb.r},${rgb.g},${rgb.b})`;
+  sampledRgb.textContent=`Detected colour: rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+  sampledPh.textContent=ph.toFixed(1);
+  sampledNature.textContent=nature;
+  sampledNature.style.color=natureColour(nature);
+  sampledConfidence.textContent=quality>=75?"HIGH":quality>=55?"MEDIUM":"LOW";
+  sampledEvaluation.textContent=imageEvaluation(ph,nature,quality);
+
+  // Feed the local estimate into the same manual scanner controls.
+  phInput.value=ph.toFixed(1);
+  updateLive();
+  runAnalysis();
+});
+
+/* ---------- 18. START THE PAGE ---------- */
+// C.I.D.A Project Credits and feature-safe startup remain in this single offline file.
+buildTable();
+updateLive();
+
+// Animate the bars growing upward the first time the chart is seen.
+const chartWatcher = new IntersectionObserver(entries => {
+  entries.forEach(en => {
+    if(!en.isIntersecting) return;
+    chartWatcher.unobserve(en.target);
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if(reduce){ barGrow = 1; drawBar(); return; }
+    const startTime = performance.now();
+    function step(now){
+      const t = Math.min((now - startTime) / 900, 1);
+      barGrow = 1 - Math.pow(1 - t, 3);      // smooth ease-out
+      drawBar();
+      if(t < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  });
+},{threshold:.25});
+chartWatcher.observe(barCanvas);
+
+// Open the first procedure step so the section does not look empty.
+window.addEventListener("load", () => {
+  const first = document.querySelector(".acc-head");
+  if(first) first.click();
+  drawBar(); drawDonut();
+});
+
+// Before printing, open every accordion and finish the bar animation.
+window.addEventListener("beforeprint", () => {
+  barGrow = 1; drawBar(); drawDonut();
+  $$(".acc").forEach(acc => {
+    acc.classList.add("open");
+    acc.querySelector(".acc-body").style.maxHeight = "none";
+  });
+});
+
+/* ---------- Student ID submit ---------- */
+const submitIdBtn = $("#submit-id");
+const submitConfirm = $("#submit-confirm");
+if (submitIdBtn) {
+  submitIdBtn.addEventListener("click", () => {
+    const fields = $$(".id-field .idfield");
+    const filled = Array.from(fields).every(f => f.value.trim().length > 0);
+    if (!filled) {
+      fields.forEach(f => {
+        f.style.borderColor = f.value.trim() ? "" : "#ff5566";
+      });
+      submitConfirm.style.display = "none";
+      return;
+    }
+    fields.forEach(f => { f.style.borderColor = ""; f.disabled = true; });
+    submitIdBtn.disabled = true;
+    submitIdBtn.style.opacity = ".55";
+    submitIdBtn.style.cursor = "default";
+    submitIdBtn.textContent = "SUBMITTED";
+    submitConfirm.style.display = "inline-flex";
+  });
+}
+</script>
+</body>
+</html>
